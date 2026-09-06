@@ -1,0 +1,61 @@
+name: Build APK et EXE
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  android:
+    name: APK Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      # Genere le dossier android/ (non versionne pour alleger le depot)
+      - name: Generer la plateforme Android
+        run: flutter create --org com.exemple --project-name iptv_player --platforms=android .
+
+      - name: Ajouter la permission INTERNET
+        run: python3 tool/patch_android.py
+
+      - run: flutter pub get
+      - run: flutter build apk --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iptv-player-android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+  windows:
+    name: EXE Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Generer la plateforme Windows
+        run: flutter create --org com.exemple --project-name iptv_player --platforms=windows .
+
+      - run: flutter pub get
+      - run: flutter build windows --release
+
+      # Le .exe a besoin des DLL du meme dossier : on livre tout le dossier.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iptv-player-windows
+          path: build/windows/x64/runner/Release/
+          if-no-files-found: error
