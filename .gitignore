@@ -19,3 +19,6 @@ web/
 .vscode/
 *.iml
 .DS_Store
+
+# L icone doit etre versionnee
+!assets/

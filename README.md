@@ -1,63 +1,75 @@
-# Lecteur IPTV
+# Lecteur IPTV — v2
 
-Lecteur de playlists M3U publiques (projet **iptv-org**), écrit en Flutter.
-Un seul code source, deux applications compilées automatiquement par GitHub Actions :
+Lecteur de playlists M3U publiques, écrit en Flutter.
+Un seul code source, deux applications compilées par GitHub Actions :
 
 | Plateforme | Fichier produit |
 |---|---|
 | Android | `app-release.apk` |
-| Windows | dossier `Release/` contenant `iptv_player.exe` + DLL |
+| Windows | dossier `Release/` avec `iptv_player.exe` + DLL |
 
-## Fonctionnalités
+## Nouveautés de la v2
 
-- Chargement de la playlist complète iptv-org (~15 000 chaînes)
-- Recherche instantanée par nom ou groupe
-- Navigation par **catégorie**, **pays** et **langue**
-- Favoris et historique enregistrés localement
-- Lecture HLS / MPEG-TS via `media_kit` (moteur libmpv)
-- Chaîne suivante / précédente depuis le lecteur
-- Source M3U personnalisable dans les réglages
+- **Icône personnalisée** appliquée à l'APK et à l'exe (`assets/icon/icon.png`)
+- **8 sources préconfigurées**, dont 6 francophones, choisies d'un seul appui
+- Source par défaut : liste **France de Free-TV** (courte, fiable, rapide)
+- **Sélecteur de sous-titres** avec activation automatique de la piste française
+- **Sélecteur de piste audio** (chaînes multilingues)
+- Rechargement automatique quand on change de source
+
+## Sources incluses
+
+| Nom | Contenu |
+|---|---|
+| Free-TV France | TF1, France 3, BFM TV, TV5 Monde, régionales |
+| iptv-org France | toutes les chaînes FR indexées |
+| iptv-org langue française | francophone tous pays |
+| iptv-org Belgique / Suisse / Canada | par pays |
+| Free-TV Monde | international, peu de liens morts |
+| iptv-org complet | ~15 000 chaînes |
+
+Toute autre URL `.m3u` / `.m3u8` peut être saisie à la main dans les Réglages.
 
 ## Arborescence
 
 ```
 iptv_player/
-├── .github/workflows/build.yml   Compilation APK + EXE
-├── tool/patch_android.py         Ajoute la permission INTERNET
-├── pubspec.yaml                  Dépendances
+├── .github/workflows/build.yml   Compilation APK + EXE + icônes
+├── assets/icon/icon.png          Votre icône (1024×1024)
+├── tool/patch_android.py         Permission INTERNET
+├── pubspec.yaml
 ├── lib/
-│   ├── main.dart                 Point d'entrée
-│   ├── app.dart                  Thème + MaterialApp
-│   ├── models/channel.dart       Modèle de chaîne
+│   ├── main.dart
+│   ├── app.dart
+│   ├── models/channel.dart
 │   ├── services/
 │   │   ├── m3u_service.dart      Téléchargement + parsing M3U
-│   │   └── prefs_service.dart    Favoris, historique, réglages
+│   │   ├── prefs_service.dart    Favoris, historique, réglages
+│   │   └── sources.dart          Sources préconfigurées
 │   ├── screens/
-│   │   ├── home_screen.dart      Menu latéral détaillé
+│   │   ├── home_screen.dart      Menu latéral
 │   │   ├── channel_list_screen.dart
 │   │   ├── group_list_screen.dart
-│   │   ├── player_screen.dart    Lecteur vidéo
+│   │   ├── player_screen.dart    Lecteur + sous-titres + audio
 │   │   ├── settings_screen.dart
 │   │   └── about_screen.dart
 │   └── widgets/channel_tile.dart
-├── TUTO.md                       Tutoriel Termux + GitHub pas à pas
+├── TUTO.md
 └── README.md
 ```
 
-Les dossiers `android/` et `windows/` ne sont pas dans le dépôt : ils sont
-régénérés à chaque build par `flutter create --platforms=...`. Cela garde le
-dépôt léger et évite des milliers de fichiers à pousser depuis Termux.
+`android/` et `windows/` ne sont pas versionnés : la CI les régénère à chaque
+build avec `flutter create --platforms=...`.
 
-## Compiler
+## Sous-titres : les limites
 
-Poussez sur la branche `main` : le workflow démarre seul. Les fichiers se
-récupèrent dans l'onglet **Actions** → dernier run → section **Artifacts**.
-
-Voir `TUTO.md` pour la procédure complète depuis Termux.
+Le bouton CC liste les pistes présentes dans le flux et la piste française est
+sélectionnée automatiquement si elle existe. En pratique, presque aucune chaîne
+française publique n'en a : les sous-titres TNT passent par le télétexte, qui
+disparaît lors de la conversion en flux internet.
 
 ## Avertissement
 
 Cette application n'héberge et ne fournit aucun flux vidéo. Elle lit une liste
-de liens publics maintenue par la communauté iptv-org. La disponibilité et la
-légalité de chaque flux dépendent de la chaîne et de votre pays : il vous
-appartient de vérifier que vous avez le droit d'accéder aux contenus lus.
+de liens publics maintenue par des projets communautaires. La disponibilité et
+la légalité de chaque flux dépendent de la chaîne et de votre pays.

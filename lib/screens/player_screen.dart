@@ -25,6 +25,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   late final VideoController _video;
   late int _index;
   String? _error;
+  bool _subsApplied = false;
 
   Channel get _current => widget.playlist[_index];
 
@@ -34,14 +35,44 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _index = widget.startIndex;
     _player = Player();
     _video = VideoController(_player);
+
     _player.stream.error.listen((e) {
       if (mounted) setState(() => _error = e);
     });
+
+    // Des que les pistes du flux sont connues, on tente le sous-titre francais.
+    _player.stream.tracks.listen((tracks) {
+      if (!mounted) return;
+      setState(() {});
+      if (Prefs.autoSubtitles && !_subsApplied) {
+        final fr = _chercherPisteFr(tracks.subtitle);
+        if (fr != null) {
+          _subsApplied = true;
+          _player.setSubtitleTrack(fr);
+        }
+      }
+    });
+
     _open();
   }
 
+  /// Cherche une piste de sous-titres en francais parmi celles du flux.
+  SubtitleTrack? _chercherPisteFr(List<SubtitleTrack> pistes) {
+    for (final t in pistes) {
+      final code = '${t.language ?? ''} ${t.title ?? ''}'.toLowerCase();
+      if (code.contains('fr') || code.contains('fra') ||
+          code.contains('french') || code.contains('franc')) {
+        return t;
+      }
+    }
+    return null;
+  }
+
   Future<void> _open() async {
-    setState(() => _error = null);
+    setState(() {
+      _error = null;
+      _subsApplied = false;
+    });
     await Prefs.pushRecent(_current);
     await _player.open(Media(_current.url));
   }
@@ -51,6 +82,118 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if (next < 0 || next >= widget.playlist.length) return;
     setState(() => _index = next);
     _open();
+  }
+
+  void _menuSousTitres() {
+    final pistes = _player.state.tracks.subtitle;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF161B22),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Sous-titres',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+            if (pistes.isEmpty)
+              const Padding(
+                padding: EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: Text(
+                  'Ce flux ne contient aucune piste de sous-titres.\n\n'
+                  'C est le cas de la quasi-totalite des chaines publiques : '
+                  'les sous-titres de la TNT passent par le teletexte, qui '
+                  'disparait lors de la conversion en flux internet.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: Colors.white70),
+                ),
+              )
+            else
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: pistes.map((t) {
+                    final actif = _player.state.track.subtitle.id == t.id;
+                    return ListTile(
+                      leading: Icon(actif
+                          ? Icons.check_circle
+                          : Icons.subtitles_outlined),
+                      title: Text(t.title ?? t.language ?? 'Piste ${t.id}'),
+                      subtitle: t.language == null
+                          ? null
+                          : Text(t.language!,
+                              style: const TextStyle(fontSize: 12)),
+                      onTap: () {
+                        _player.setSubtitleTrack(t);
+                        Navigator.pop(context);
+                        setState(() {});
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.visibility_off),
+              title: const Text('Desactiver les sous-titres'),
+              onTap: () {
+                _player.setSubtitleTrack(SubtitleTrack.no());
+                Navigator.pop(context);
+                setState(() {});
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _menuAudio() {
+    final pistes = _player.state.tracks.audio;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF161B22),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Pistes audio',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+            if (pistes.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Text('Aucune piste detectee pour le moment.'),
+              )
+            else
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: pistes.map((t) {
+                    final actif = _player.state.track.audio.id == t.id;
+                    return ListTile(
+                      leading: Icon(
+                          actif ? Icons.check_circle : Icons.audiotrack),
+                      title: Text(t.title ?? t.language ?? 'Piste ${t.id}'),
+                      onTap: () {
+                        _player.setAudioTrack(t);
+                        Navigator.pop(context);
+                        setState(() {});
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -63,12 +206,27 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   Widget build(BuildContext context) {
     final fav = Prefs.isFavorite(_current);
+    final nbSubs = _player.state.tracks.subtitle.length;
 
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         title: Text(_current.name, overflow: TextOverflow.ellipsis),
         actions: [
+          IconButton(
+            icon: Badge(
+              isLabelVisible: nbSubs > 1,
+              label: Text('${nbSubs - 1}'),
+              child: const Icon(Icons.closed_caption),
+            ),
+            tooltip: 'Sous-titres',
+            onPressed: _menuSousTitres,
+          ),
+          IconButton(
+            icon: const Icon(Icons.audiotrack),
+            tooltip: 'Piste audio',
+            onPressed: _menuAudio,
+          ),
           IconButton(
             icon: Icon(fav ? Icons.star : Icons.star_border,
                 color: fav ? Colors.amber : null),
@@ -95,6 +253,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   controller: _video,
                   controls: AdaptiveVideoControls,
                   fit: BoxFit.contain,
+                  subtitleViewConfiguration:
+                      const SubtitleViewConfiguration(
+                    visible: true,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 30,
+                      background: Paint(),
+                    ),
+                  ),
                 ),
                 if (_error != null)
                   Container(

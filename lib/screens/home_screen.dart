@@ -8,7 +8,16 @@ import 'channel_list_screen.dart';
 import 'group_list_screen.dart';
 import 'settings_screen.dart';
 
-enum Section { all, favorites, recents, categories, countries, languages, settings, about }
+enum Section {
+  all,
+  favorites,
+  recents,
+  categories,
+  countries,
+  languages,
+  settings,
+  about
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,18 +29,20 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Section _section = Section.all;
   Future<List<Channel>>? _allFuture;
+  String _loadedUrl = '';
 
   @override
   void initState() {
     super.initState();
-    _allFuture = M3uService.instance.load(Prefs.sourceUrl);
+    _load();
   }
 
-  void _reloadAll({bool force = true}) {
-    setState(() {
-      _allFuture = M3uService.instance.load(Prefs.sourceUrl, force: force);
-    });
+  void _load({bool force = false}) {
+    _loadedUrl = Prefs.sourceUrl;
+    _allFuture = M3uService.instance.load(_loadedUrl, force: force);
   }
+
+  void _reloadAll() => setState(() => _load(force: true));
 
   String get _title => switch (_section) {
         Section.all => 'Toutes les chaines',
@@ -44,9 +55,32 @@ class _HomeScreenState extends State<HomeScreen> {
         Section.about => 'Aide et a propos',
       };
 
+  Widget _erreur(Object e, VoidCallback retry) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.wifi_off, size: 48),
+              const SizedBox(height: 12),
+              Text('Echec du chargement.\n$e', textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reessayer'),
+                onPressed: retry,
+              ),
+            ],
+          ),
+        ),
+      );
+
   Widget _buildBody() {
     switch (_section) {
       case Section.all:
+        // La source a change dans les reglages : on recharge.
+        if (_loadedUrl != Prefs.sourceUrl) _load();
+
         return FutureBuilder<List<Channel>>(
           future: _allFuture,
           builder: (context, snap) {
@@ -58,35 +92,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     CircularProgressIndicator(),
                     SizedBox(height: 16),
                     Text('Telechargement de la playlist...'),
-                    SizedBox(height: 6),
-                    Text('Environ 15 000 chaines, patientez.',
-                        style: TextStyle(fontSize: 12, color: Colors.white54)),
                   ],
                 ),
               );
             }
-            if (snap.hasError) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.wifi_off, size: 48),
-                      const SizedBox(height: 12),
-                      Text('Echec du chargement.\n${snap.error}',
-                          textAlign: TextAlign.center),
-                      const SizedBox(height: 12),
-                      FilledButton.icon(
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Reessayer'),
-                        onPressed: _reloadAll,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
+            if (snap.hasError) return _erreur(snap.error!, _reloadAll);
             return ChannelListScreen(
               title: _title,
               channels: snap.data!,
@@ -153,9 +163,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return ListTile(
       leading: Icon(icon),
       title: Text(label),
-      subtitle: sub == null
-          ? null
-          : Text(sub, style: const TextStyle(fontSize: 11)),
+      subtitle:
+          sub == null ? null : Text(sub, style: const TextStyle(fontSize: 11)),
       selected: _section == s,
       selectedTileColor: Colors.white10,
       onTap: () {
@@ -183,22 +192,25 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Color(0xFF0D1117)),
+            DrawerHeader(
+              decoration: const BoxDecoration(color: Color(0xFF0D1117)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Icon(Icons.live_tv, size: 40, color: Color(0xFF7FD4E8)),
-                  SizedBox(height: 10),
-                  Text('Lecteur IPTV', style: TextStyle(fontSize: 20)),
-                  Text('Playlists publiques iptv-org',
+                  Image.asset('assets/icon/icon.png',
+                      height: 64,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.live_tv,
+                          size: 44, color: Color(0xFF7FD4E8))),
+                  const SizedBox(height: 10),
+                  const Text('Lecteur IPTV', style: TextStyle(fontSize: 20)),
+                  const Text('v2 - playlists publiques',
                       style: TextStyle(fontSize: 12, color: Colors.white54)),
                 ],
               ),
             ),
             _item(Section.all, Icons.list, 'Toutes les chaines',
-                sub: 'Playlist complete + recherche'),
+                sub: 'Source active + recherche'),
             _item(Section.favorites, Icons.star, 'Favoris',
                 sub: 'Vos chaines enregistrees'),
             _item(Section.recents, Icons.history, 'Historique',
@@ -212,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 sub: 'Regroupe par langue'),
             const Divider(),
             _item(Section.settings, Icons.settings, 'Reglages',
-                sub: 'Source M3U, logos, cache'),
+                sub: 'Sources FR, sous-titres, cache'),
             _item(Section.about, Icons.help_outline, 'Aide et a propos'),
           ],
         ),

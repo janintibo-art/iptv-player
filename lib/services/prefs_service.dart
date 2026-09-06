@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/channel.dart';
+import 'sources.dart';
 
 /// Stockage local : favoris, historique et reglages.
 class Prefs {
@@ -12,14 +13,16 @@ class Prefs {
   static const _kRecents = 'recents';
   static const _kSource = 'source_url';
   static const _kShowLogos = 'show_logos';
+  static const _kAutoSubs = 'auto_subtitles';
 
   static Future<void> init() async {
     _p = await SharedPreferences.getInstance();
   }
 
   // ---- Reglages ----
+  // Par defaut : la liste France de Free-TV, courte et rapide a charger.
   static String get sourceUrl =>
-      _p.getString(_kSource) ?? 'https://iptv-org.github.io/iptv/index.m3u';
+      _p.getString(_kSource) ?? Sources.presets.first.url;
 
   static Future<void> setSourceUrl(String v) => _p.setString(_kSource, v);
 
@@ -27,11 +30,14 @@ class Prefs {
 
   static Future<void> setShowLogos(bool v) => _p.setBool(_kShowLogos, v);
 
+  static bool get autoSubtitles => _p.getBool(_kAutoSubs) ?? true;
+
+  static Future<void> setAutoSubtitles(bool v) => _p.setBool(_kAutoSubs, v);
+
   // ---- Favoris ----
   static List<Channel> get favorites => _read(_kFavorites);
 
-  static bool isFavorite(Channel c) =>
-      favorites.any((f) => f.url == c.url);
+  static bool isFavorite(Channel c) => favorites.any((f) => f.url == c.url);
 
   static Future<void> toggleFavorite(Channel c) async {
     final list = favorites;
