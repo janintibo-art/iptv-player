@@ -1,69 +1,68 @@
-# Mettre à jour vers la v2 depuis Termux
-
-Le dépôt `iptv-player` existe déjà et `gh` vous a authentifié. Il suffit de
-remplacer les fichiers et de pousser : **3 commandes**.
+# Passer à la v3 depuis Termux
 
 ## Les 3 commandes
 
 ```bash
-cd ~ && rm -rf iptv_player_old && mv iptv_player iptv_player_old && cp /sdcard/Download/iptv_player_v2.zip ~/ && unzip -o iptv_player_v2.zip
+cd ~ && cp /sdcard/Download/iptv_player_v3.zip ~/ && unzip -o iptv_player_v3.zip
 ```
 
 ```bash
-cd ~/iptv_player_v2 && cp -r ../iptv_player_old/.git . && git add -A && git commit -m "Version 2 : icone, sources FR, sous-titres"
+cd ~/iptv_player_v3 && cp -r ../iptv_player_v2/.git . && git add -A && git commit -m "Version 3 : cache disque, plein ecran, releases auto"
 ```
 
 ```bash
 git push
 ```
 
-La ligne 2 récupère le `.git` de l'ancien dossier : le dépôt distant, l'historique
-et l'authentification `gh` sont conservés, aucun mot de passe ne sera demandé.
+> La ligne 2 récupère le `.git` du dossier v2 : dépôt distant, historique et
+> authentification `gh` conservés, aucun mot de passe demandé.
+> Si votre dossier précédent porte un autre nom, remplacez `../iptv_player_v2`
+> par le bon chemin.
 
-Ensuite : github.com → votre dépôt → onglet **Actions**. Le build repart seul,
-comptez 10 à 20 minutes. L'APK et le dossier Windows sont dans **Artifacts**.
+## Publier une vraie page de téléchargement
 
----
-
-## Si vous repartez de zéro
-
-Au cas où l'ancien dossier aurait été supprimé :
+Nouveau en v3 : au lieu d'aller chercher les fichiers dans Artifacts, un tag
+crée une **Release** permanente.
 
 ```bash
-cd ~ && cp /sdcard/Download/iptv_player_v2.zip ~/ && unzip -o iptv_player_v2.zip && cd iptv_player_v2
+cd ~/iptv_player_v3 && git tag v3.0.0 && git push --tags
 ```
+
+Après le build (10-20 min), allez dans l'onglet **Releases** du dépôt. Vous y
+trouverez les APK et l'archive Windows, téléchargeables directement, sans
+expiration.
+
+**Quel APK prendre ?** `app-arm64-v8a-release.apk` pour tout téléphone acheté
+après 2016. Les autres ne servent qu'aux vieux appareils 32 bits et aux
+émulateurs.
+
+Pour les versions suivantes, incrémentez le tag :
 
 ```bash
-git init -b main && git add -A && git commit -m "Version 2"
+git tag v3.1.0 && git push --tags
 ```
-
-```bash
-git remote add origin https://github.com/janintibo-art/iptv-player.git && git push -u origin main --force
-```
-
-> `--force` écrase l'ancienne version sur GitHub. À n'utiliser que si vous
-> êtes sûr de vouloir remplacer ce qui s'y trouve.
-
----
 
 ## Modifier ensuite
 
 ```bash
-cd ~/iptv_player_v2
-```
-
-```bash
-nano lib/services/sources.dart
+cd ~/iptv_player_v3 && nano lib/services/sources.dart
 ```
 
 > `Ctrl + O` puis Entrée pour enregistrer, `Ctrl + X` pour quitter.
-> Ce fichier contient la liste des sources : ajoutez-y vos propres URLs.
 
 ```bash
 git add -A && git commit -m "Nouvelles sources" && git push
 ```
 
-Chaque `push` relance la compilation.
+## Faire le ménage dans Termux
+
+Les anciennes versions prennent de la place :
+
+```bash
+rm -rf ~/iptv_player_old ~/iptv_player.zip ~/iptv_player_v2.zip
+```
+
+> Gardez `~/iptv_player_v2` jusqu'à ce que la v3 soit poussée avec succès.
 
 ---
 
@@ -72,19 +71,21 @@ Chaque `push` relance la compilation.
 | Problème | Solution |
 |---|---|
 | `not a git repository` | Le `.git` n'a pas été copié : refaites la ligne 2 |
+| `cp: cannot stat '../iptv_player_v2/.git'` | Vérifiez le nom avec `ls ~` |
 | `Updates were rejected` | `git pull --rebase origin main` puis `git push` |
-| `Authentication failed` | `gh auth login` puis relancez `git push` |
-| `nothing to commit` | Les fichiers sont identiques, rien à envoyer |
-| Build échoue sur `flutter_launcher_icons` | Vérifiez que `assets/icon/icon.png` est bien présent et versionné |
-| Build échoue ailleurs | Actions → run → cherchez la première ligne rouge `Error:` |
-| L'icône n'a pas changé sur Android | Désinstallez l'ancienne APK avant d'installer la nouvelle |
-| Aucune chaîne ne se charge | Réglages → choisissez « Free-TV France » |
-| Le bouton CC dit « aucune piste » | Normal : ce flux ne transporte pas de sous-titres |
+| `Authentication failed` | `gh auth login` puis relancez |
+| Le tag ne déclenche rien | Vérifiez qu'il commence par `v` : `v3.0.0`, pas `3.0.0` |
+| Release vide ou absente | Actions → job → l'étape « Publier dans la Release » doit être verte |
+| `Resource not accessible by integration` | Dépôt → Settings → Actions → General → Workflow permissions → cochez **Read and write** |
+| Tag posé par erreur | `git tag -d v3.0.0 && git push --delete origin v3.0.0` |
+| Build échoue sur `wakelock_plus` | Envoyez-moi la ligne d'erreur, on le retire du Windows |
+| L'app plante au démarrage | Réglages → vider le cache, ou réinstallez |
+| L'icône n'a pas changé | Désinstallez l'ancienne APK avant d'installer |
 
-## Vérifier que l'icône est bien versionnée
+## Vérifier la permission de publication
 
-```bash
-git ls-files assets/
-```
+Une seule fois, avant le premier tag :
+dépôt sur github.com → **Settings** → **Actions** → **General** →
+section *Workflow permissions* → **Read and write permissions** → **Save**.
 
-> Doit afficher `assets/icon/icon.png`. Sinon : `git add -f assets/icon/icon.png`
+Sans ça, la création de Release échoue avec une erreur 403.

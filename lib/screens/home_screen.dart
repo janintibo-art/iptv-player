@@ -204,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           size: 44, color: Color(0xFF7FD4E8))),
                   const SizedBox(height: 10),
                   const Text('Lecteur IPTV', style: TextStyle(fontSize: 20)),
-                  const Text('v2 - playlists publiques',
+                  const Text('v3 - playlists publiques',
                       style: TextStyle(fontSize: 12, color: Colors.white54)),
                 ],
               ),

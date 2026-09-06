@@ -1,56 +1,65 @@
-# Lecteur IPTV — v2
+# Lecteur IPTV — v3
 
 Lecteur de playlists M3U publiques, écrit en Flutter.
-Un seul code source, deux applications compilées par GitHub Actions :
+Un seul code source, deux applications compilées par GitHub Actions.
 
-| Plateforme | Fichier produit |
+## Nouveautés de la v3
+
+- **Cache disque** : les playlists sont enregistrées sur l'appareil.
+  Démarrage instantané, liste consultable sans réseau, rechargement
+  automatique après 12 h. En cas de panne réseau, l'app se rabat sur la
+  dernière version connue au lieu d'afficher une erreur.
+- **Plein écran** en paysage avec masquage des barres système.
+- **Écran maintenu allumé** pendant toute la lecture.
+- **Releases GitHub automatiques** : un tag `v3.0.0` publie une page de
+  téléchargement avec l'APK et l'archive Windows. Plus besoin d'aller
+  fouiller dans Artifacts, et les fichiers n'expirent pas.
+- **APK par architecture** (`--split-per-abi`) : environ 3× plus léger.
+- Réglages : date de dernière mise à jour et taille du cache.
+
+## Rappel v2
+
+Icône personnalisée, 8 sources préconfigurées dont 6 francophones,
+sélecteur de sous-titres avec activation automatique de la piste française,
+sélecteur de piste audio.
+
+## Publier une version téléchargeable
+
+```bash
+git tag v3.0.0 && git push --tags
+```
+
+La page Release apparaît sous l'onglet **Releases** du dépôt, avec :
+
+| Fichier | Pour qui |
 |---|---|
-| Android | `app-release.apk` |
-| Windows | dossier `Release/` avec `iptv_player.exe` + DLL |
-
-## Nouveautés de la v2
-
-- **Icône personnalisée** appliquée à l'APK et à l'exe (`assets/icon/icon.png`)
-- **8 sources préconfigurées**, dont 6 francophones, choisies d'un seul appui
-- Source par défaut : liste **France de Free-TV** (courte, fiable, rapide)
-- **Sélecteur de sous-titres** avec activation automatique de la piste française
-- **Sélecteur de piste audio** (chaînes multilingues)
-- Rechargement automatique quand on change de source
-
-## Sources incluses
-
-| Nom | Contenu |
-|---|---|
-| Free-TV France | TF1, France 3, BFM TV, TV5 Monde, régionales |
-| iptv-org France | toutes les chaînes FR indexées |
-| iptv-org langue française | francophone tous pays |
-| iptv-org Belgique / Suisse / Canada | par pays |
-| Free-TV Monde | international, peu de liens morts |
-| iptv-org complet | ~15 000 chaînes |
-
-Toute autre URL `.m3u` / `.m3u8` peut être saisie à la main dans les Réglages.
+| `app-arm64-v8a-release.apk` | tous les téléphones récents |
+| `app-armeabi-v7a-release.apk` | vieux téléphones 32 bits |
+| `app-x86_64-release.apk` | émulateurs, Chromebooks |
+| `iptv-player-windows.zip` | Windows, décompresser entièrement |
 
 ## Arborescence
 
 ```
 iptv_player/
-├── .github/workflows/build.yml   Compilation APK + EXE + icônes
-├── assets/icon/icon.png          Votre icône (1024×1024)
-├── tool/patch_android.py         Permission INTERNET
+├── .github/workflows/build.yml
+├── assets/icon/icon.png
+├── tool/patch_android.py
 ├── pubspec.yaml
 ├── lib/
 │   ├── main.dart
 │   ├── app.dart
 │   ├── models/channel.dart
 │   ├── services/
-│   │   ├── m3u_service.dart      Téléchargement + parsing M3U
+│   │   ├── m3u_service.dart      Téléchargement, parsing, repli hors ligne
+│   │   ├── cache_service.dart    Cache disque
 │   │   ├── prefs_service.dart    Favoris, historique, réglages
 │   │   └── sources.dart          Sources préconfigurées
 │   ├── screens/
-│   │   ├── home_screen.dart      Menu latéral
+│   │   ├── home_screen.dart
 │   │   ├── channel_list_screen.dart
 │   │   ├── group_list_screen.dart
-│   │   ├── player_screen.dart    Lecteur + sous-titres + audio
+│   │   ├── player_screen.dart
 │   │   ├── settings_screen.dart
 │   │   └── about_screen.dart
 │   └── widgets/channel_tile.dart
@@ -58,15 +67,13 @@ iptv_player/
 └── README.md
 ```
 
-`android/` et `windows/` ne sont pas versionnés : la CI les régénère à chaque
-build avec `flutter create --platforms=...`.
+## Suite prévue
 
-## Sous-titres : les limites
-
-Le bouton CC liste les pistes présentes dans le flux et la piste française est
-sélectionnée automatiquement si elle existe. En pratique, presque aucune chaîne
-française publique n'en a : les sous-titres TNT passent par le télétexte, qui
-disparaît lors de la conversion en flux internet.
+- **v4** : test de disponibilité des flux et zapping automatique, fusion de
+  plusieurs sources avec déduplication, import/export des favoris,
+  ouverture d'un `.m3u` local
+- **v5** : guide des programmes (EPG XMLTV), Android TV, picture-in-picture
+- **v6** : signature de l'APK avec keystore
 
 ## Avertissement
 

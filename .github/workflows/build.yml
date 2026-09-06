@@ -3,7 +3,12 @@ name: Build APK et EXE
 on:
   push:
     branches: [ main, master ]
+    tags: [ 'v*' ]
   workflow_dispatch:
+
+# Necessaire pour creer une Release et y attacher les fichiers.
+permissions:
+  contents: write
 
 jobs:
   android:
@@ -21,7 +26,6 @@ jobs:
         with:
           channel: stable
 
-      # Genere le dossier android/ (non versionne pour alleger le depot)
       - name: Generer la plateforme Android
         run: flutter create --org com.exemple --project-name iptv_player --platforms=android .
 
@@ -30,16 +34,25 @@ jobs:
 
       - run: flutter pub get
 
-      - name: Generer les icones de l application
+      - name: Generer les icones
         run: dart run flutter_launcher_icons
 
-      - run: flutter build apk --release
+      # Un APK par architecture : environ 3 fois plus leger qu un APK universel.
+      - name: Compiler les APK
+        run: flutter build apk --release --split-per-abi
 
       - uses: actions/upload-artifact@v4
         with:
           name: iptv-player-android-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/*.apk
           if-no-files-found: error
+
+      - name: Publier dans la Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/app/outputs/flutter-apk/*.apk
+          generate_release_notes: true
 
   windows:
     name: EXE Windows
@@ -56,14 +69,26 @@ jobs:
 
       - run: flutter pub get
 
-      - name: Generer les icones de l application
+      - name: Generer les icones
         run: dart run flutter_launcher_icons
 
       - run: flutter build windows --release
 
-      # Le .exe a besoin des DLL du meme dossier : on livre tout le dossier.
       - uses: actions/upload-artifact@v4
         with:
           name: iptv-player-windows
           path: build/windows/x64/runner/Release/
           if-no-files-found: error
+
+      # Pour la Release on livre une archive unique, DLL comprises.
+      - name: Archiver le dossier Windows
+        if: startsWith(github.ref, 'refs/tags/')
+        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath iptv-player-windows.zip
+        shell: pwsh
+
+      - name: Publier dans la Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: iptv-player-windows.zip
+          generate_release_notes: true

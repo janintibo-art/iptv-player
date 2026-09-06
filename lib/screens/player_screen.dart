@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../models/channel.dart';
 import '../services/prefs_service.dart';
@@ -26,6 +27,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   late int _index;
   String? _error;
   bool _subsApplied = false;
+  bool _pleinEcran = false;
 
   Channel get _current => widget.playlist[_index];
 
@@ -36,11 +38,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _player = Player();
     _video = VideoController(_player);
 
+    // Empeche l ecran de s eteindre pendant la lecture.
+    WakelockPlus.enable();
+
     _player.stream.error.listen((e) {
       if (mounted) setState(() => _error = e);
     });
 
-    // Des que les pistes du flux sont connues, on tente le sous-titre francais.
     _player.stream.tracks.listen((tracks) {
       if (!mounted) return;
       setState(() {});
@@ -56,12 +60,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _open();
   }
 
-  /// Cherche une piste de sous-titres en francais parmi celles du flux.
   SubtitleTrack? _chercherPisteFr(List<SubtitleTrack> pistes) {
     for (final t in pistes) {
       final code = '${t.language ?? ''} ${t.title ?? ''}'.toLowerCase();
-      if (code.contains('fr') || code.contains('fra') ||
-          code.contains('french') || code.contains('franc')) {
+      if (code.contains('fr') ||
+          code.contains('fra') ||
+          code.contains('french') ||
+          code.contains('franc')) {
         return t;
       }
     }
@@ -82,6 +87,22 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if (next < 0 || next >= widget.playlist.length) return;
     setState(() => _index = next);
     _open();
+  }
+
+  Future<void> _basculerPleinEcran() async {
+    _pleinEcran = !_pleinEcran;
+
+    if (_pleinEcran) {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } else {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      await SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    }
+    if (mounted) setState(() {});
   }
 
   void _menuSousTitres() {
@@ -178,8 +199,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   children: pistes.map((t) {
                     final actif = _player.state.track.audio.id == t.id;
                     return ListTile(
-                      leading: Icon(
-                          actif ? Icons.check_circle : Icons.audiotrack),
+                      leading:
+                          Icon(actif ? Icons.check_circle : Icons.audiotrack),
                       title: Text(t.title ?? t.language ?? 'Piste ${t.id}'),
                       onTap: () {
                         _player.setAudioTrack(t);
@@ -199,12 +220,86 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void dispose() {
     _player.dispose();
+    WakelockPlus.disable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     super.dispose();
+  }
+
+  Widget _zoneVideo() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Video(
+          controller: _video,
+          controls: AdaptiveVideoControls,
+          fit: BoxFit.contain,
+          subtitleViewConfiguration: const SubtitleViewConfiguration(
+            visible: true,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 30,
+              background: Paint(),
+            ),
+          ),
+        ),
+        if (_error != null)
+          Container(
+            color: Colors.black87,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline,
+                    size: 44, color: Colors.redAccent),
+                const SizedBox(height: 12),
+                const Text(
+                  'Ce flux ne repond pas.\n'
+                  'Beaucoup de liens publics sont hors ligne : '
+                  'essayez une autre chaine.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: _open,
+                  child: const Text('Reessayer'),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    // En plein ecran : uniquement la video et un bouton de sortie discret.
+    if (_pleinEcran) {
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _basculerPleinEcran();
+        },
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          body: Stack(
+            children: [
+              Positioned.fill(child: _zoneVideo()),
+              Positioned(
+                top: 8,
+                left: 8,
+                child: IconButton(
+                  icon: const Icon(Icons.fullscreen_exit,
+                      color: Colors.white70, size: 30),
+                  onPressed: _basculerPleinEcran,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final fav = Prefs.isFavorite(_current);
     final nbSubs = _player.state.tracks.subtitle.length;
 
@@ -213,6 +308,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
       appBar: AppBar(
         title: Text(_current.name, overflow: TextOverflow.ellipsis),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.fullscreen),
+            tooltip: 'Plein ecran',
+            onPressed: _basculerPleinEcran,
+          ),
           IconButton(
             icon: Badge(
               isLabelVisible: nbSubs > 1,
@@ -245,51 +345,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       ),
       body: Column(
         children: [
-          Expanded(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Video(
-                  controller: _video,
-                  controls: AdaptiveVideoControls,
-                  fit: BoxFit.contain,
-                  subtitleViewConfiguration:
-                      const SubtitleViewConfiguration(
-                    visible: true,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 30,
-                      background: Paint(),
-                    ),
-                  ),
-                ),
-                if (_error != null)
-                  Container(
-                    color: Colors.black87,
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.error_outline,
-                            size: 44, color: Colors.redAccent),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'Ce flux ne repond pas.\n'
-                          'Beaucoup de liens publics sont hors ligne : '
-                          'essayez une autre chaine.',
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        FilledButton(
-                          onPressed: _open,
-                          child: const Text('Reessayer'),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
+          Expanded(child: _zoneVideo()),
           Container(
             color: const Color(0xFF161B22),
             padding: const EdgeInsets.symmetric(vertical: 6),

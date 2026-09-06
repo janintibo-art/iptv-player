@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/cache_service.dart';
 import '../services/m3u_service.dart';
 import '../services/prefs_service.dart';
 import '../services/sources.dart';
@@ -15,6 +16,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _url =
       TextEditingController(text: Prefs.sourceUrl);
 
+  int _tailleCache = 0;
+  DateTime? _maj;
+
+  @override
+  void initState() {
+    super.initState();
+    _infosCache();
+  }
+
+  Future<void> _infosCache() async {
+    final t = await CacheService.size();
+    final m = await CacheService.lastUpdate(Prefs.sourceUrl);
+    if (mounted) setState(() {
+      _tailleCache = t;
+      _maj = m;
+    });
+  }
+
   @override
   void dispose() {
     _url.dispose();
@@ -26,10 +45,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _apply(String url) async {
     await Prefs.setSourceUrl(url.trim());
-    M3uService.instance.clearCache();
+    M3uService.instance.clearMemory();
     _url.text = url.trim();
-    setState(() {});
+    await _infosCache();
     _snack('Source changee. Ouvrez "Toutes les chaines".');
+  }
+
+  String get _tailleLisible {
+    if (_tailleCache < 1024) return '$_tailleCache o';
+    if (_tailleCache < 1024 * 1024) {
+      return '${(_tailleCache / 1024).toStringAsFixed(0)} Ko';
+    }
+    return '${(_tailleCache / 1048576).toStringAsFixed(1)} Mo';
+  }
+
+  String get _majLisible {
+    if (_maj == null) return 'jamais telechargee';
+    final d = DateTime.now().difference(_maj!);
+    if (d.inMinutes < 1) return 'a l instant';
+    if (d.inHours < 1) return 'il y a ${d.inMinutes} min';
+    if (d.inDays < 1) return 'il y a ${d.inHours} h';
+    return 'il y a ${d.inDays} j';
   }
 
   @override
@@ -43,8 +79,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 4),
         const Text(
-          'Touchez une source pour l activer. Les listes courtes se '
-          'chargent en quelques secondes.',
+          'Touchez une source pour l activer. Elle est ensuite gardee en '
+          'memoire sur l appareil et consultable hors ligne.',
           style: TextStyle(fontSize: 12, color: Colors.white54),
         ),
         const SizedBox(height: 12),
@@ -111,15 +147,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
           },
         ),
         const Divider(height: 40),
-        const Text('Donnees',
+        const Text('Cache et donnees',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 8),
+        Card(
+          color: const Color(0xFF161B22),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Source active mise a jour $_majLisible'),
+                const SizedBox(height: 4),
+                Text('Cache disque : $_tailleLisible',
+                    style: const TextStyle(
+                        fontSize: 12, color: Colors.white54)),
+                const SizedBox(height: 4),
+                const Text(
+                  'Les playlists sont retelechargees automatiquement '
+                  'apres 12 heures.',
+                  style: TextStyle(fontSize: 12, color: Colors.white54),
+                ),
+              ],
+            ),
+          ),
+        ),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.cached),
           title: const Text('Vider le cache des playlists'),
-          onTap: () {
-            M3uService.instance.clearCache();
+          subtitle: const Text('Force un retelechargement complet.'),
+          onTap: () async {
+            await M3uService.instance.clearAll();
+            await _infosCache();
             _snack('Cache vide.');
           },
         ),
