@@ -239,7 +239,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
             style: TextStyle(
               color: Colors.white,
               fontSize: 30,
-              background: Paint(),
+              backgroundColor: Colors.black54,
             ),
           ),
         ),
