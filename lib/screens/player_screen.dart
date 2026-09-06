@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
@@ -6,6 +8,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../models/channel.dart';
 import '../services/prefs_service.dart';
+import '../services/stream_check_service.dart';
 
 class PlayerScreen extends StatefulWidget {
   final List<Channel> playlist;
@@ -22,12 +25,22 @@ class PlayerScreen extends StatefulWidget {
 }
 
 class _PlayerScreenState extends State<PlayerScreen> {
+  /// Au-dela, on arrete de zapper tout seul pour ne pas boucler indefiniment.
+  static const int _maxSautsAuto = 15;
+
+  /// Delai avant de considerer qu un flux ne demarrera pas.
+  static const Duration _delaiDemarrage = Duration(seconds: 12);
+
   late final Player _player;
   late final VideoController _video;
   late int _index;
+
   String? _error;
   bool _subsApplied = false;
   bool _pleinEcran = false;
+  bool _aDemarre = false;
+  int _sautsAuto = 0;
+  Timer? _minuteur;
 
   Channel get _current => widget.playlist[_index];
 
@@ -38,11 +51,21 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _player = Player();
     _video = VideoController(_player);
 
-    // Empeche l ecran de s eteindre pendant la lecture.
     WakelockPlus.enable();
 
+    // Le flux repond : on annule le zapping automatique.
+    _player.stream.playing.listen((joue) {
+      if (joue && mounted) {
+        _aDemarre = true;
+        _sautsAuto = 0;
+        _minuteur?.cancel();
+      }
+    });
+
     _player.stream.error.listen((e) {
-      if (mounted) setState(() => _error = e);
+      if (!mounted) return;
+      setState(() => _error = e);
+      _zapperSiPossible('flux en erreur');
     });
 
     _player.stream.tracks.listen((tracks) {
@@ -74,17 +97,46 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Future<void> _open() async {
+    _minuteur?.cancel();
     setState(() {
       _error = null;
       _subsApplied = false;
+      _aDemarre = false;
     });
+
     await Prefs.pushRecent(_current);
     await _player.open(Media(_current.url));
+
+    // Si rien ne demarre dans le delai imparti, on passe a la suite.
+    _minuteur = Timer(_delaiDemarrage, () {
+      if (!mounted || _aDemarre) return;
+      _zapperSiPossible('aucune image apres 12 s');
+    });
   }
 
-  void _go(int delta) {
+  /// Passe a la chaine suivante quand le flux courant ne repond pas.
+  void _zapperSiPossible(String raison) {
+    if (!Prefs.autoZap) return;
+    if (_sautsAuto >= _maxSautsAuto) return;
+    if (_index >= widget.playlist.length - 1) return;
+
+    _sautsAuto++;
+    final ancienne = _current.name;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        duration: const Duration(seconds: 2),
+        content: Text('$ancienne : $raison, passage a la suivante'),
+      ));
+
+    _go(1, auto: true);
+  }
+
+  void _go(int delta, {bool auto = false}) {
     final next = _index + delta;
     if (next < 0 || next >= widget.playlist.length) return;
+    if (!auto) _sautsAuto = 0; // un zapping manuel remet le compteur a zero
     setState(() => _index = next);
     _open();
   }
@@ -219,6 +271,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    _minuteur?.cancel();
     _player.dispose();
     WakelockPlus.disable();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -253,16 +306,30 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 const Icon(Icons.error_outline,
                     size: 44, color: Colors.redAccent),
                 const SizedBox(height: 12),
-                const Text(
-                  'Ce flux ne repond pas.\n'
-                  'Beaucoup de liens publics sont hors ligne : '
-                  'essayez une autre chaine.',
+                Text(
+                  Prefs.autoZap && _sautsAuto >= _maxSautsAuto
+                      ? 'Trop de flux morts d affilee.\n'
+                          'Le zapping automatique s est arrete.'
+                      : 'Ce flux ne repond pas.\n'
+                          'Beaucoup de liens publics sont hors ligne.',
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: _open,
-                  child: const Text('Reessayer'),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FilledButton(
+                      onPressed: _open,
+                      child: const Text('Reessayer'),
+                    ),
+                    const SizedBox(width: 12),
+                    OutlinedButton(
+                      onPressed: _index < widget.playlist.length - 1
+                          ? () => _go(1)
+                          : null,
+                      child: const Text('Suivante'),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -273,7 +340,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // En plein ecran : uniquement la video et un bouton de sortie discret.
     if (_pleinEcran) {
       return PopScope(
         canPop: false,
@@ -302,11 +368,29 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     final fav = Prefs.isFavorite(_current);
     final nbSubs = _player.state.tracks.subtitle.length;
+    final etat = StreamCheckService.instance.etat(_current);
 
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text(_current.name, overflow: TextOverflow.ellipsis),
+        title: Row(
+          children: [
+            if (etat != EtatFlux.inconnu)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(
+                  Icons.circle,
+                  size: 10,
+                  color: etat == EtatFlux.enLigne
+                      ? const Color(0xFF3FBF5F)
+                      : const Color(0xFFC94B4B),
+                ),
+              ),
+            Expanded(
+              child: Text(_current.name, overflow: TextOverflow.ellipsis),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.fullscreen),

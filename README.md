@@ -1,42 +1,32 @@
-# Lecteur IPTV — v3
+# Lecteur IPTV — v4
 
 Lecteur de playlists M3U publiques, écrit en Flutter.
 Un seul code source, deux applications compilées par GitHub Actions.
 
-## Nouveautés de la v3
+## Nouveautés de la v4
 
-- **Cache disque** : les playlists sont enregistrées sur l'appareil.
-  Démarrage instantané, liste consultable sans réseau, rechargement
-  automatique après 12 h. En cas de panne réseau, l'app se rabat sur la
-  dernière version connue au lieu d'afficher une erreur.
-- **Plein écran** en paysage avec masquage des barres système.
-- **Écran maintenu allumé** pendant toute la lecture.
-- **Releases GitHub automatiques** : un tag `v3.0.0` publie une page de
-  téléchargement avec l'APK et l'archive Windows. Plus besoin d'aller
-  fouiller dans Artifacts, et les fichiers n'expirent pas.
-- **APK par architecture** (`--split-per-abi`) : environ 3× plus léger.
-- Réglages : date de dernière mise à jour et taille du cache.
+### Détection des flux morts
+Un bouton **Tester** en haut de la liste interroge chaque flux (premiers
+octets seulement, pas la vidéo) et pose une pastille verte ou rouge sur chaque
+chaîne. Un filtre masque ensuite les chaînes hors ligne. Les résultats sont
+enregistrés sur l'appareil et survivent au redémarrage. 8 tests en parallèle,
+annulable à tout moment.
 
-## Rappel v2
+### Zapping automatique
+Si un flux ne donne aucune image en 12 secondes ou renvoie une erreur, l'app
+passe seule à la suivante. Elle s'arrête après 15 sauts consécutifs pour ne
+pas défiler indéfiniment ; un zapping manuel remet le compteur à zéro.
 
-Icône personnalisée, 8 sources préconfigurées dont 6 francophones,
-sélecteur de sous-titres avec activation automatique de la piste française,
-sélecteur de piste audio.
+### Fusion multi-sources
+Les sources sont désormais des cases à cocher : cochez-en autant que vous
+voulez, elles sont téléchargées puis fusionnées. Déduplication sur l'URL **et**
+sur le nom normalisé, donc « TF1 (1080p) » et « TF1 HD » ne font qu'une entrée.
+Une source injoignable ne fait plus tomber les autres.
 
-## Publier une version téléchargeable
-
-```bash
-git tag v3.0.0 && git push --tags
-```
-
-La page Release apparaît sous l'onglet **Releases** du dépôt, avec :
-
-| Fichier | Pour qui |
-|---|---|
-| `app-arm64-v8a-release.apk` | tous les téléphones récents |
-| `app-armeabi-v7a-release.apk` | vieux téléphones 32 bits |
-| `app-x86_64-release.apk` | émulateurs, Chromebooks |
-| `iptv-player-windows.zip` | Windows, décompresser entièrement |
+### Import / export
+- Export des favoris en JSON, import additif qui n'écrase jamais l'existant
+- Ouverture d'un fichier `.m3u` local, ajouté comme source à part entière
+- Ajout d'URL personnalisées avec un nom
 
 ## Arborescence
 
@@ -51,10 +41,12 @@ iptv_player/
 │   ├── app.dart
 │   ├── models/channel.dart
 │   ├── services/
-│   │   ├── m3u_service.dart      Téléchargement, parsing, repli hors ligne
-│   │   ├── cache_service.dart    Cache disque
-│   │   ├── prefs_service.dart    Favoris, historique, réglages
-│   │   └── sources.dart          Sources préconfigurées
+│   │   ├── m3u_service.dart            Téléchargement, parsing, fusion
+│   │   ├── cache_service.dart          Cache disque
+│   │   ├── stream_check_service.dart   Test de disponibilité
+│   │   ├── transfert_service.dart      Import / export
+│   │   ├── prefs_service.dart          Favoris, historique, réglages
+│   │   └── sources.dart                Sources préconfigurées
 │   ├── screens/
 │   │   ├── home_screen.dart
 │   │   ├── channel_list_screen.dart
@@ -67,11 +59,15 @@ iptv_player/
 └── README.md
 ```
 
+## Historique
+
+- **v1** : lecteur de base, menu, favoris
+- **v2** : icône, 8 sources dont 6 francophones, sous-titres, pistes audio
+- **v3** : cache disque, plein écran, releases automatiques, APK par ABI
+- **v4** : test des flux, zapping auto, fusion multi-sources, import/export
+
 ## Suite prévue
 
-- **v4** : test de disponibilité des flux et zapping automatique, fusion de
-  plusieurs sources avec déduplication, import/export des favoris,
-  ouverture d'un `.m3u` local
 - **v5** : guide des programmes (EPG XMLTV), Android TV, picture-in-picture
 - **v6** : signature de l'APK avec keystore
 

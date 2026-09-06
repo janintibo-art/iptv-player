@@ -12,44 +12,65 @@ class AboutScreen extends StatelessWidget {
       children: const [
         Text('Lecteur IPTV', style: TextStyle(fontSize: 22)),
         SizedBox(height: 4),
-        Text('Version 3.0.0', style: TextStyle(color: Colors.white54)),
+        Text('Version 4.0.0', style: TextStyle(color: Colors.white54)),
         SizedBox(height: 24),
-        Text('Comment ca marche', style: gras),
-        SizedBox(height: 8),
-        Text(
-          'L application telecharge une playlist M3U publique, la garde en '
-          'memoire sur l appareil, et affiche les chaines qu elle contient. '
-          'Touchez une chaine pour lancer la lecture, l etoile pour la mettre '
-          'en favori.',
-        ),
-        SizedBox(height: 20),
         Text('Le menu', style: gras),
         SizedBox(height: 8),
         Text(
-          '\u2022 Toutes les chaines : la source active, avec recherche.\n'
+          '\u2022 Toutes les chaines : vos sources fusionnees, avec recherche.\n'
           '\u2022 Favoris : vos chaines enregistrees.\n'
           '\u2022 Historique : les 50 dernieres chaines ouvertes.\n'
-          '\u2022 Categories : news, sport, musique, documentaires...\n'
-          '\u2022 Pays : chaines regroupees par pays de diffusion.\n'
-          '\u2022 Langues : chaines regroupees par langue.\n'
-          '\u2022 Reglages : source, sous-titres, logos, cache.',
+          '\u2022 Categories, Pays, Langues : parcours par theme.\n'
+          '\u2022 Reglages : sources, tests, sauvegarde.',
         ),
         SizedBox(height: 20),
-        Text('Le lecteur', style: gras),
+        Text('Plusieurs sources a la fois', style: gras),
         SizedBox(height: 8),
         Text(
-          'Plein ecran en paysage, selection des sous-titres et des pistes '
-          'audio, chaine suivante et precedente. L ecran reste allume tant '
-          'que la lecture est ouverte.',
+          'Dans les Reglages, cochez autant de sources que vous voulez : '
+          'elles sont telechargees puis fusionnees en une seule liste. Les '
+          'doublons sont retires, y compris quand deux listes proposent la '
+          'meme chaine sous un nom legerement different.\n\n'
+          'Vous pouvez aussi ajouter votre propre URL, ou ouvrir un fichier '
+          '.m3u present sur l appareil.',
+        ),
+        SizedBox(height: 20),
+        Text('Tester les flux', style: gras),
+        SizedBox(height: 8),
+        Text(
+          'Le bouton "Tester" en haut de la liste interroge chaque flux pour '
+          'savoir s il repond encore. Une pastille verte ou rouge apparait '
+          'alors sur chaque chaine, et le filtre permet de masquer celles qui '
+          'sont mortes.\n\n'
+          'Le test ne telecharge pas la video, seulement les premiers octets. '
+          'Comptez tout de meme quelques minutes sur une grosse liste : '
+          'filtrez ou testez categorie par categorie.',
+        ),
+        SizedBox(height: 20),
+        Text('Zapping automatique', style: gras),
+        SizedBox(height: 8),
+        Text(
+          'Si un flux ne donne aucune image au bout de 12 secondes, ou renvoie '
+          'une erreur, l application passe seule a la chaine suivante. Elle '
+          's arrete apres 15 sauts consecutifs pour ne pas defiler '
+          'indefiniment. Un zapping manuel remet ce compteur a zero, et '
+          'l option se desactive dans les Reglages.',
+        ),
+        SizedBox(height: 20),
+        Text('Sauvegarder ses favoris', style: gras),
+        SizedBox(height: 8),
+        Text(
+          'L export ecrit un fichier JSON que vous pouvez copier ailleurs ou '
+          'garder de cote. L import ajoute son contenu a vos favoris actuels '
+          'sans jamais les ecraser : les chaines deja presentes sont ignorees.',
         ),
         SizedBox(height: 20),
         Text('Hors ligne', style: gras),
         SizedBox(height: 8),
         Text(
-          'Les playlists sont enregistrees sur l appareil et rechargees '
-          'automatiquement apres 12 heures. Sans reseau, la derniere version '
-          'connue reste consultable, meme si les flux eux-memes ne pourront '
-          'evidemment pas etre lus.',
+          'Les playlists sont enregistrees sur l appareil et rechargees apres '
+          '12 heures. Sans reseau, la derniere version connue reste '
+          'consultable, meme si les flux ne pourront evidemment pas etre lus.',
         ),
         SizedBox(height: 20),
         Text('Sous-titres : ce qu il faut savoir', style: gras),
@@ -60,14 +81,6 @@ class AboutScreen extends StatelessWidget {
           'pratique, la quasi-totalite des chaines francaises n en proposent '
           'aucune : les sous-titres de la TNT sont diffuses en teletexte, et '
           'ce canal disparait lors de la reconversion en flux internet.',
-        ),
-        SizedBox(height: 20),
-        Text('Pourquoi certaines chaines ne marchent pas', style: gras),
-        SizedBox(height: 8),
-        Text(
-          'Les liens proviennent de listes communautaires. Beaucoup de flux '
-          'tombent hors ligne, changent d adresse ou sont bloques selon le '
-          'pays. Ce n est pas un bug : passez a une autre chaine.',
         ),
         SizedBox(height: 20),
         Text('Avertissement legal', style: gras),

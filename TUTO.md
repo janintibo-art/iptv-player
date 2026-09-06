@@ -1,68 +1,53 @@
-# Passer à la v3 depuis Termux
+# Passer à la v4 depuis Termux
 
 ## Les 3 commandes
 
 ```bash
-cd ~ && cp /sdcard/Download/iptv_player_v3.zip ~/ && unzip -o iptv_player_v3.zip
+cd ~ && cp /sdcard/Download/iptv_player_v4.zip ~/ && unzip -o iptv_player_v4.zip
 ```
 
 ```bash
-cd ~/iptv_player_v3 && cp -r ../iptv_player_v2/.git . && git add -A && git commit -m "Version 3 : cache disque, plein ecran, releases auto"
+cd ~/iptv_player_v4 && cp -r ../iptv_player_v3/.git . && git add -A && git commit -m "Version 4 : test des flux, zapping auto, multi-sources, import export"
 ```
 
 ```bash
 git push
 ```
 
-> La ligne 2 récupère le `.git` du dossier v2 : dépôt distant, historique et
-> authentification `gh` conservés, aucun mot de passe demandé.
-> Si votre dossier précédent porte un autre nom, remplacez `../iptv_player_v2`
-> par le bon chemin.
-
-## Publier une vraie page de téléchargement
-
-Nouveau en v3 : au lieu d'aller chercher les fichiers dans Artifacts, un tag
-crée une **Release** permanente.
+Puis, une fois les deux jobs verts :
 
 ```bash
-cd ~/iptv_player_v3 && git tag v3.0.0 && git push --tags
+git tag v4.0.0 && git push --tags
 ```
 
-Après le build (10-20 min), allez dans l'onglet **Releases** du dépôt. Vous y
-trouverez les APK et l'archive Windows, téléchargeables directement, sans
-expiration.
+---
 
-**Quel APK prendre ?** `app-arm64-v8a-release.apk` pour tout téléphone acheté
-après 2016. Les autres ne servent qu'aux vieux appareils 32 bits et aux
-émulateurs.
+## Prendre en main la v4
 
-Pour les versions suivantes, incrémentez le tag :
+### Tester les flux
+Liste des chaînes → bouton **Tester** en haut à droite. Au-delà de 400 chaînes
+une confirmation s'affiche : le test est long. Le plus efficace est de
+filtrer d'abord (recherche, ou une catégorie), puis de tester ce sous-ensemble.
 
-```bash
-git tag v3.1.0 && git push --tags
-```
+Une fois le test fait, l'icône entonnoir apparaît à côté : elle masque les
+chaînes hors ligne.
 
-## Modifier ensuite
+### Cocher plusieurs sources
+Réglages → **Sources actives**. Ce sont des cases à cocher, plus des boutons
+radio. Par exemple « Free-TV France » + « iptv-org France » donne une liste
+large sans les doublons.
 
-```bash
-cd ~/iptv_player_v3 && nano lib/services/sources.dart
-```
+Il faut toujours au moins une source active : décocher la dernière est refusé.
 
-> `Ctrl + O` puis Entrée pour enregistrer, `Ctrl + X` pour quitter.
+### Importer un fichier .m3u
+Réglages → **Ouvrir un fichier .m3u**. Le fichier est copié dans l'app et
+devient une source cochable, utilisable hors ligne. Attention : vider le cache
+supprime aussi ces fichiers importés, il faudra les réimporter.
 
-```bash
-git add -A && git commit -m "Nouvelles sources" && git push
-```
-
-## Faire le ménage dans Termux
-
-Les anciennes versions prennent de la place :
-
-```bash
-rm -rf ~/iptv_player_old ~/iptv_player.zip ~/iptv_player_v2.zip
-```
-
-> Gardez `~/iptv_player_v2` jusqu'à ce que la v3 soit poussée avec succès.
+### Sauvegarder les favoris
+Réglages → **Exporter** produit un JSON. Sur Android, si la boîte de dialogue
+système n'apparaît pas, le fichier est écrit dans le dossier de l'application
+et le chemin complet s'affiche dans le message.
 
 ---
 
@@ -70,22 +55,19 @@ rm -rf ~/iptv_player_old ~/iptv_player.zip ~/iptv_player_v2.zip
 
 | Problème | Solution |
 |---|---|
-| `not a git repository` | Le `.git` n'a pas été copié : refaites la ligne 2 |
-| `cp: cannot stat '../iptv_player_v2/.git'` | Vérifiez le nom avec `ls ~` |
+| Build échoue sur `file_picker` | Envoyez-moi la ligne d'erreur |
+| Le test reste bloqué à 0 | Pas de réseau, ou tous les flux en timeout : attendez 8 s par lot |
+| Tout ressort « hors ligne » | Certains réseaux mobiles bloquent les ports non standard : testez en Wi-Fi |
+| Le zapping saute trop de chaînes | Réglages → désactivez **Zapping automatique** |
+| L'import de favoris ne fait rien | Le fichier doit être un JSON exporté par l'app |
+| Fichier .m3u importé introuvable | Le cache a été vidé : réimportez-le |
 | `Updates were rejected` | `git pull --rebase origin main` puis `git push` |
-| `Authentication failed` | `gh auth login` puis relancez |
-| Le tag ne déclenche rien | Vérifiez qu'il commence par `v` : `v3.0.0`, pas `3.0.0` |
-| Release vide ou absente | Actions → job → l'étape « Publier dans la Release » doit être verte |
-| `Resource not accessible by integration` | Dépôt → Settings → Actions → General → Workflow permissions → cochez **Read and write** |
-| Tag posé par erreur | `git tag -d v3.0.0 && git push --delete origin v3.0.0` |
-| Build échoue sur `wakelock_plus` | Envoyez-moi la ligne d'erreur, on le retire du Windows |
-| L'app plante au démarrage | Réglages → vider le cache, ou réinstallez |
-| L'icône n'a pas changé | Désinstallez l'ancienne APK avant d'installer |
+| Release non créée | Settings → Actions → Workflow permissions → Read and write |
 
-## Vérifier la permission de publication
+## Faire le ménage
 
-Une seule fois, avant le premier tag :
-dépôt sur github.com → **Settings** → **Actions** → **General** →
-section *Workflow permissions* → **Read and write permissions** → **Save**.
+```bash
+rm -rf ~/iptv_player_v2 ~/iptv_player_v2.zip ~/iptv_player_v3.zip
+```
 
-Sans ça, la création de Release échoue avec une erreur 403.
+> Gardez `~/iptv_player_v3` jusqu'à ce que la v4 soit poussée avec succès.

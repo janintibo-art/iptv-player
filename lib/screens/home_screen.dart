@@ -29,7 +29,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Section _section = Section.all;
   Future<List<Channel>>? _allFuture;
-  String _loadedUrl = '';
+  String _sourcesChargees = '';
 
   @override
   void initState() {
@@ -38,8 +38,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _load({bool force = false}) {
-    _loadedUrl = Prefs.sourceUrl;
-    _allFuture = M3uService.instance.load(_loadedUrl, force: force);
+    final urls = Prefs.sourceUrls;
+    _sourcesChargees = urls.join('|');
+    _allFuture = M3uService.instance.loadMerged(urls, force: force);
   }
 
   void _reloadAll() => setState(() => _load(force: true));
@@ -78,8 +79,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBody() {
     switch (_section) {
       case Section.all:
-        // La source a change dans les reglages : on recharge.
-        if (_loadedUrl != Prefs.sourceUrl) _load();
+        // Les sources ont change dans les reglages : on recharge.
+        if (_sourcesChargees != Prefs.sourceUrls.join('|')) _load();
 
         return FutureBuilder<List<Channel>>(
           future: _allFuture,
@@ -91,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     CircularProgressIndicator(),
                     SizedBox(height: 16),
-                    Text('Telechargement de la playlist...'),
+                    Text('Chargement des sources...'),
                   ],
                 ),
               );
@@ -176,6 +177,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final nbSources = Prefs.sourceUrls.length;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_title),
@@ -183,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_section == Section.all)
             IconButton(
               icon: const Icon(Icons.refresh),
-              tooltip: 'Recharger la playlist',
+              tooltip: 'Recharger les sources',
               onPressed: _reloadAll,
             ),
         ],
@@ -204,13 +207,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           size: 44, color: Color(0xFF7FD4E8))),
                   const SizedBox(height: 10),
                   const Text('Lecteur IPTV', style: TextStyle(fontSize: 20)),
-                  const Text('v3 - playlists publiques',
-                      style: TextStyle(fontSize: 12, color: Colors.white54)),
+                  Text('v4 - $nbSources source(s) active(s)',
+                      style: const TextStyle(
+                          fontSize: 12, color: Colors.white54)),
                 ],
               ),
             ),
             _item(Section.all, Icons.list, 'Toutes les chaines',
-                sub: 'Source active + recherche'),
+                sub: 'Sources fusionnees + recherche'),
             _item(Section.favorites, Icons.star, 'Favoris',
                 sub: 'Vos chaines enregistrees'),
             _item(Section.recents, Icons.history, 'Historique',
@@ -224,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 sub: 'Regroupe par langue'),
             const Divider(),
             _item(Section.settings, Icons.settings, 'Reglages',
-                sub: 'Sources FR, sous-titres, cache'),
+                sub: 'Sources, tests, sauvegarde'),
             _item(Section.about, Icons.help_outline, 'Aide et a propos'),
           ],
         ),

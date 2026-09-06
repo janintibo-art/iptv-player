@@ -20,14 +20,16 @@ class M3uService {
   M3uService._();
   static final M3uService instance = M3uService._();
 
-  /// Au-dela de cette duree le cache disque est considere comme perime.
+  /// Prefixe des sources importees depuis un fichier de l appareil.
+  static const String prefixeLocal = 'local:';
+
   static const Duration validite = Duration(hours: 12);
 
   final Map<String, List<Channel>> _memoire = {};
   static final RegExp _attr = RegExp(r'([\w-]+)="([^"]*)"');
 
-  /// Vrai si la derniere lecture venait du cache et non du reseau.
-  bool venaitDuCache = false;
+  /// Nombre de doublons retires lors de la derniere fusion.
+  int doublonsRetires = 0;
 
   void clearMemory() => _memoire.clear();
 
@@ -36,17 +38,77 @@ class M3uService {
     await CacheService.clear();
   }
 
-  /// Charge une playlist. Ordre de priorite :
-  /// 1. memoire, 2. cache disque recent, 3. reseau, 4. cache disque perime.
+  /// Enregistre une playlist importee depuis un fichier local.
+  Future<void> enregistrerLocale(String cle, String contenu) async {
+    await CacheService.write(cle, contenu);
+    _memoire.remove(cle);
+  }
+
+  /// Charge plusieurs sources et les fusionne en retirant les doublons.
+  ///
+  /// Deux entrees sont considerees identiques si elles pointent vers la
+  /// meme URL, ou si elles portent le meme nom normalise.
+  Future<List<Channel>> loadMerged(List<String> urls,
+      {bool force = false}) async {
+    final vues = <String>{};
+    final noms = <String>{};
+    final out = <Channel>[];
+    var doublons = 0;
+    Object? derniereErreur;
+
+    for (final url in urls) {
+      List<Channel> liste;
+      try {
+        liste = await load(url, force: force);
+      } catch (e) {
+        derniereErreur = e;
+        continue; // une source morte ne doit pas faire tomber les autres
+      }
+
+      for (final c in liste) {
+        final nom = _normaliser(c.name);
+        if (vues.contains(c.url) || noms.contains(nom)) {
+          doublons++;
+          continue;
+        }
+        vues.add(c.url);
+        noms.add(nom);
+        out.add(c);
+      }
+    }
+
+    doublonsRetires = doublons;
+
+    if (out.isEmpty && derniereErreur != null) throw derniereErreur;
+    return out;
+  }
+
+  /// Enleve la resolution, la casse et la ponctuation pour comparer les noms.
+  String _normaliser(String nom) => nom
+      .toLowerCase()
+      .replaceAll(RegExp(r'\(\s*\d+p\s*\)'), '')
+      .replaceAll(RegExp(r'\b(hd|fhd|sd|uhd|4k|1080p?|720p?|576p?|480p?)\b'), '')
+      .replaceAll(RegExp(r'[^a-z0-9]'), '')
+      .trim();
+
+  /// Charge une playlist. Ordre : memoire, cache recent, reseau, cache perime.
   Future<List<Channel>> load(String url, {bool force = false}) async {
-    if (!force && _memoire.containsKey(url)) {
-      return _memoire[url]!;
+    if (!force && _memoire.containsKey(url)) return _memoire[url]!;
+
+    // Fichier importe depuis l appareil : jamais de reseau.
+    if (url.startsWith(prefixeLocal)) {
+      final contenu = await CacheService.read(url);
+      if (contenu == null) {
+        throw Exception('Fichier importe introuvable. Reimportez-le.');
+      }
+      final ch = parse(contenu);
+      _memoire[url] = ch;
+      return ch;
     }
 
     if (!force) {
       final recent = await CacheService.read(url, maxAge: validite);
       if (recent != null) {
-        venaitDuCache = true;
         final ch = parse(recent);
         _memoire[url] = ch;
         return ch;
@@ -55,7 +117,7 @@ class M3uService {
 
     try {
       final res = await http
-          .get(Uri.parse(url), headers: {'User-Agent': 'IptvPlayer/3.0'})
+          .get(Uri.parse(url), headers: {'User-Agent': 'IptvPlayer/4.0'})
           .timeout(const Duration(seconds: 60));
 
       if (res.statusCode != 200) {
@@ -65,15 +127,12 @@ class M3uService {
       final texte = utf8.decode(res.bodyBytes, allowMalformed: true);
       await CacheService.write(url, texte);
 
-      venaitDuCache = false;
       final ch = parse(texte);
       _memoire[url] = ch;
       return ch;
     } catch (e) {
-      // Pas de reseau : on se rabat sur le cache, meme perime.
       final vieux = await CacheService.read(url);
       if (vieux != null) {
-        venaitDuCache = true;
         final ch = parse(vieux);
         _memoire[url] = ch;
         return ch;
