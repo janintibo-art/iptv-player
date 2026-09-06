@@ -71,7 +71,8 @@ jobs:
 
       - name: Desactiver les icones Android sur ce runner
         shell: bash
-        run: sed -i 's/^  android: true/  android: false/' pubspec.yaml
+        run: |
+          sed -i 's/^  android: true/  android: false/' pubspec.yaml
 
       - name: Generer les icones
         run: dart run flutter_launcher_icons
