@@ -12,7 +12,7 @@ class AboutScreen extends StatelessWidget {
       children: const [
         Text('Lecteur IPTV', style: TextStyle(fontSize: 22)),
         SizedBox(height: 4),
-        Text('Version 6.0.0', style: TextStyle(color: Colors.white54)),
+        Text('Version 6.2.0', style: TextStyle(color: Colors.white54)),
         SizedBox(height: 24),
         Text('Mon serveur : le mode API', style: gras),
         SizedBox(height: 8),
@@ -99,6 +99,22 @@ class AboutScreen extends StatelessWidget {
           'l ecran d accueil des televiseurs et box, avec sa banniere, et '
           'fonctionne sans ecran tactile. La navigation se fait a la '
           'telecommande, les fleches deplacent la selection et OK valide.',
+        ),
+        SizedBox(height: 20),
+        Text('Categories et Pays : deux modes', style: gras),
+        SizedBox(height: 8),
+        Text(
+          'Ces ecrans proposent un selecteur en haut.\n\n'
+          'Mes sources : regroupe les chaines de vos sources cochees, '
+          'serveur Xtream compris. C est ce que vous voyez dans "Toutes les '
+          'chaines", simplement classe.\n\n'
+          'iptv-org : charge les playlists thematiques du projet iptv-org, '
+          'independamment de vos sources. Des milliers de chaines a '
+          'explorer, avec beaucoup de liens morts.\n\n'
+          'Le regroupement par pays de vos sources s appuie sur le suffixe '
+          'du tvg-id : une chaine sans identifiant se retrouve dans "Pays '
+          'inconnu". Le regroupement par langue n existe qu en mode '
+          'iptv-org, le format M3U ne portant aucune information de langue.',
         ),
         SizedBox(height: 20),
         Text('Le menu', style: gras),

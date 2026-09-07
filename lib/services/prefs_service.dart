@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/channel.dart';
 import '../models/xtream.dart';
+import 'groupes.dart';
 import 'sources.dart';
 
 /// Stockage local : favoris, historique et reglages.
@@ -23,6 +24,7 @@ class Prefs {
   static const _kUserAgent = 'user_agent';
   static const _kReferer = 'referer';
   static const _kComptes = 'comptes_xtream';
+  static const _kModeGroupe = 'mode_groupe';
 
   static Future<void> init() async {
     _p = await SharedPreferences.getInstance();
@@ -124,6 +126,16 @@ class Prefs {
 
   static String get referer => _p.getString(_kReferer) ?? '';
   static Future<void> setReferer(String v) => _p.setString(_kReferer, v);
+
+  // ---- Regroupement : mes sources ou iptv-org ----
+  /// 0 = mes sources fusionnees, 1 = playlists thematiques iptv-org.
+  static ModeGroupe get modeGroupe =>
+      (_p.getInt(_kModeGroupe) ?? 0) == 1
+          ? ModeGroupe.iptvOrg
+          : ModeGroupe.mesSources;
+
+  static Future<void> setModeGroupe(ModeGroupe m) =>
+      _p.setInt(_kModeGroupe, m == ModeGroupe.iptvOrg ? 1 : 0);
 
   // ---- Comptes de serveurs Xtream ----
   static List<XtreamAccount> get comptes {

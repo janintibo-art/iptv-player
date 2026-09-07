@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/channel.dart';
+import '../services/groupes.dart';
 import '../services/m3u_service.dart';
 import '../services/prefs_service.dart';
 import 'about_screen.dart';
@@ -156,6 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case Section.categories:
         return const GroupListScreen(
           title: 'Categories',
+          type: TypeGroupe.categorie,
           playlistUrl: Playlists.byCategory,
           icon: Icons.category,
         );
@@ -163,6 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case Section.countries:
         return const GroupListScreen(
           title: 'Pays',
+          type: TypeGroupe.pays,
           playlistUrl: Playlists.byCountry,
           icon: Icons.public,
         );
@@ -170,6 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case Section.languages:
         return const GroupListScreen(
           title: 'Langues',
+          type: TypeGroupe.langue,
           playlistUrl: Playlists.byLanguage,
           icon: Icons.translate,
         );
@@ -251,9 +255,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 sub: '50 dernieres chaines vues'),
             const Divider(),
             _item(Section.categories, Icons.category, 'Categories',
-                sub: 'News, sport, musique...'),
+                sub: 'Vos sources ou iptv-org'),
             _item(Section.countries, Icons.public, 'Pays',
-                sub: 'Regroupe par pays'),
+                sub: 'Vos sources ou iptv-org'),
             _item(Section.languages, Icons.translate, 'Langues',
                 sub: 'Regroupe par langue'),
             const Divider(),
