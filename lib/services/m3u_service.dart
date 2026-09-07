@@ -16,6 +16,37 @@ class Playlists {
       'https://iptv-org.github.io/iptv/index.language.m3u';
 }
 
+/// Ce qu une source a donne lors du dernier chargement.
+class RapportSource {
+  final String url;
+  final int trouvees;
+  final int ajoutees;
+  final int doublons;
+  final String? erreur;
+
+  const RapportSource({
+    required this.url,
+    this.trouvees = 0,
+    this.ajoutees = 0,
+    this.doublons = 0,
+    this.erreur,
+  });
+
+  bool get ok => erreur == null;
+
+  /// Nom lisible : dernier segment de l adresse.
+  String get nom {
+    if (url.startsWith(M3uService.prefixeLocal)) {
+      return url.substring(M3uService.prefixeLocal.length);
+    }
+    final u = Uri.tryParse(url);
+    if (u == null) return url;
+    final seg = u.pathSegments.where((s) => s.isNotEmpty).toList();
+    final fin = seg.isEmpty ? u.host : seg.last;
+    return '${u.host} / $fin';
+  }
+}
+
 class M3uService {
   M3uService._();
   static final M3uService instance = M3uService._();
@@ -30,6 +61,11 @@ class M3uService {
 
   /// Nombre de doublons retires lors de la derniere fusion.
   int doublonsRetires = 0;
+
+  /// Compte rendu de la derniere fusion, une entree par source.
+  /// Sans cela une source en echec disparait silencieusement et l on croit
+  /// que la playlist est simplement petite.
+  final List<RapportSource> rapport = [];
 
   void clearMemory() => _memoire.clear();
 
@@ -56,31 +92,57 @@ class M3uService {
     var doublons = 0;
     Object? derniereErreur;
 
+    rapport.clear();
+
     for (final url in urls) {
       List<Channel> liste;
       try {
         liste = await load(url, force: force);
       } catch (e) {
         derniereErreur = e;
+        rapport.add(RapportSource(url: url, erreur: _messageErreur(e)));
         continue; // une source morte ne doit pas faire tomber les autres
       }
 
+      var ajoutees = 0;
+      var ignorees = 0;
       for (final c in liste) {
         final nom = _normaliser(c.name);
-        if (vues.contains(c.url) || noms.contains(nom)) {
+        if (vues.contains(c.url) || (nom.isNotEmpty && noms.contains(nom))) {
           doublons++;
+          ignorees++;
           continue;
         }
         vues.add(c.url);
-        noms.add(nom);
+        if (nom.isNotEmpty) noms.add(nom);
         out.add(c);
+        ajoutees++;
       }
+
+      rapport.add(RapportSource(
+        url: url,
+        trouvees: liste.length,
+        ajoutees: ajoutees,
+        doublons: ignorees,
+      ));
     }
 
     doublonsRetires = doublons;
 
     if (out.isEmpty && derniereErreur != null) throw derniereErreur;
     return out;
+  }
+
+  /// Message court et lisible a partir d une exception reseau.
+  static String _messageErreur(Object e) {
+    final s = e.toString();
+    if (s.contains('404')) return 'Introuvable (404), adresse perimee';
+    if (s.contains('403')) return 'Acces refuse (403)';
+    if (s.contains('TimeoutException')) return 'Delai depasse';
+    if (s.contains('SocketException') || s.contains('Failed host lookup')) {
+      return 'Serveur injoignable';
+    }
+    return s.replaceFirst('Exception: ', '');
   }
 
   /// Enleve la resolution, la casse et la ponctuation pour comparer les noms.

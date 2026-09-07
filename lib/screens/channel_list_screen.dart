@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/channel.dart';
+import '../services/m3u_service.dart';
 import '../services/prefs_service.dart';
 import '../services/stream_check_service.dart';
 import '../widgets/channel_tile.dart';
@@ -96,6 +97,97 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
     if (mounted) setState(() {});
   }
 
+  /// Resume du dernier chargement, avec le detail des sources en echec.
+  Widget _bandeauSources() {
+    final rapport = M3uService.instance.rapport;
+    if (rapport.length < 2 && rapport.every((r) => r.ok)) {
+      return const SizedBox.shrink();
+    }
+
+    final echecs = rapport.where((r) => !r.ok).length;
+    final ok = rapport.length - echecs;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => showModalBottomSheet(
+          context: context,
+          backgroundColor: const Color(0xFF161B22),
+          builder: (_) => SafeArea(
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('Chargement des sources',
+                      style: TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+                ...rapport.map((r) => ListTile(
+                      leading: Icon(
+                        r.ok ? Icons.check_circle : Icons.error_outline,
+                        color: r.ok
+                            ? const Color(0xFF3FBF5F)
+                            : const Color(0xFFC94B4B),
+                      ),
+                      title: Text(r.nom,
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      subtitle: Text(
+                        r.ok
+                            ? '${r.ajoutees} ajoutees sur ${r.trouvees}'
+                                '${r.doublons > 0 ? ', ${r.doublons} doublons' : ''}'
+                            : r.erreur!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: r.ok ? null : const Color(0xFFC94B4B),
+                        ),
+                      ),
+                    )),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 12, 16, 20),
+                  child: Text(
+                    'Une source en echec est ignoree, les autres continuent. '
+                    'Si une adresse est perimee, retirez-la dans Reglages.',
+                    style: TextStyle(fontSize: 12, color: Colors.white54),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: echecs > 0
+                ? const Color(0xFF3A1F22)
+                : const Color(0xFF161B22),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                echecs > 0 ? Icons.warning_amber : Icons.layers,
+                size: 16,
+                color: echecs > 0 ? const Color(0xFFC94B4B) : Colors.white54,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  echecs > 0
+                      ? '$ok source(s) chargee(s), $echecs en echec'
+                      : '$ok sources fusionnees',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
+              const Icon(Icons.chevron_right, size: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _barreTest() {
     if (_check.enCours) {
       final pct = _check.total == 0 ? 0.0 : _check.fait / _check.total;
@@ -186,6 +278,7 @@ class _ChannelListScreenState extends State<ChannelListScreen> {
             ),
           ),
         ),
+        _bandeauSources(),
         _barreTest(),
         const SizedBox(height: 4),
         Expanded(
