@@ -5,11 +5,13 @@ import '../services/m3u_service.dart';
 import '../services/prefs_service.dart';
 import 'about_screen.dart';
 import 'channel_list_screen.dart';
+import 'epg_screen.dart';
 import 'group_list_screen.dart';
 import 'settings_screen.dart';
 
 enum Section {
   all,
+  guide,
   favorites,
   recents,
   categories,
@@ -47,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String get _title => switch (_section) {
         Section.all => 'Toutes les chaines',
+        Section.guide => 'Guide des programmes',
         Section.favorites => 'Favoris',
         Section.recents => 'Historique',
         Section.categories => 'Categories',
@@ -103,6 +106,19 @@ class _HomeScreenState extends State<HomeScreen> {
               channels: snap.data!,
               showAppBar: false,
             );
+          },
+        );
+
+      case Section.guide:
+        if (_sourcesChargees != Prefs.sourceUrls.join('|')) _load();
+        return FutureBuilder<List<Channel>>(
+          future: _allFuture,
+          builder: (context, snap) {
+            if (snap.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snap.hasError) return _erreur(snap.error!, _reloadAll);
+            return EpgScreen(channels: snap.data!);
           },
         );
 
@@ -207,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           size: 44, color: Color(0xFF7FD4E8))),
                   const SizedBox(height: 10),
                   const Text('Lecteur IPTV', style: TextStyle(fontSize: 20)),
-                  Text('v4 - $nbSources source(s) active(s)',
+                  Text('v5 - $nbSources source(s) active(s)',
                       style: const TextStyle(
                           fontSize: 12, color: Colors.white54)),
                 ],
@@ -215,6 +231,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             _item(Section.all, Icons.list, 'Toutes les chaines',
                 sub: 'Sources fusionnees + recherche'),
+            _item(Section.guide, Icons.event_note, 'Guide des programmes',
+                sub: 'Ce qui passe maintenant'),
             _item(Section.favorites, Icons.star, 'Favoris',
                 sub: 'Vos chaines enregistrees'),
             _item(Section.recents, Icons.history, 'Historique',

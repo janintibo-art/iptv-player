@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/channel.dart';
+import '../services/epg_service.dart';
 import '../services/prefs_service.dart';
 import '../services/stream_check_service.dart';
 
@@ -21,6 +22,7 @@ class ChannelTile extends StatelessWidget {
     final fav = Prefs.isFavorite(channel);
     final etat = StreamCheckService.instance.etat(channel);
     final horsLigne = etat == EtatFlux.horsLigne;
+    final emission = EpgService.instance.maintenant(channel.tvgId);
 
     Widget vignette = Prefs.showLogos && channel.logo.isNotEmpty
         ? Image.network(
@@ -67,16 +69,20 @@ class ChannelTile extends StatelessWidget {
         style: TextStyle(color: horsLigne ? Colors.white38 : null),
       ),
       subtitle: Text(
-        [
-          if (horsLigne) 'hors ligne',
-          if (channel.group.isNotEmpty) channel.group,
-          if (channel.countryCode.isNotEmpty) channel.countryCode,
-        ].join('  •  '),
+        emission != null
+            ? emission.titre
+            : [
+                if (horsLigne) 'hors ligne',
+                if (channel.group.isNotEmpty) channel.group,
+                if (channel.countryCode.isNotEmpty) channel.countryCode,
+              ].join('  •  '),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: 12,
-          color: horsLigne ? const Color(0xFFC94B4B) : null,
+          color: horsLigne
+              ? const Color(0xFFC94B4B)
+              : (emission != null ? const Color(0xFF7FD4E8) : null),
         ),
       ),
       trailing: IconButton(

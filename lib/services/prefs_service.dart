@@ -17,6 +17,7 @@ class Prefs {
   static const _kAutoSubs = 'auto_subtitles';
   static const _kAutoZap = 'auto_zap';
   static const _kHideOffline = 'hide_offline';
+  static const _kEpgUrls = 'epg_urls';
 
   static Future<void> init() async {
     _p = await SharedPreferences.getInstance();
@@ -109,6 +110,26 @@ class Prefs {
 
   static bool get hideOffline => _p.getBool(_kHideOffline) ?? false;
   static Future<void> setHideOffline(bool v) => _p.setBool(_kHideOffline, v);
+
+  // ---- Guide des programmes ----
+  static List<String> get epgUrls {
+    final raw = _p.getString(_kEpgUrls);
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      return (jsonDecode(raw) as List).cast<String>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<void> setEpgUrls(List<String> urls) =>
+      _p.setString(_kEpgUrls, jsonEncode(urls));
+
+  static Future<void> toggleEpgUrl(String url) async {
+    final l = epgUrls;
+    l.contains(url) ? l.remove(url) : l.add(url);
+    await setEpgUrls(l);
+  }
 
   // ---- Favoris ----
   static List<Channel> get favorites => _read(_kFavorites);

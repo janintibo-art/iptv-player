@@ -7,6 +7,8 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../models/channel.dart';
+import '../services/epg_service.dart';
+import '../services/pip_service.dart';
 import '../services/prefs_service.dart';
 import '../services/stream_check_service.dart';
 
@@ -41,6 +43,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   bool _aDemarre = false;
   int _sautsAuto = 0;
   Timer? _minuteur;
+  bool _pipDispo = false;
 
   Channel get _current => widget.playlist[_index];
 
@@ -52,6 +55,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _video = VideoController(_player);
 
     WakelockPlus.enable();
+
+    PipService.disponible().then((v) {
+      if (mounted) setState(() => _pipDispo = v);
+    });
 
     // Le flux repond : on annule le zapping automatique.
     _player.stream.playing.listen((joue) {
@@ -279,6 +286,33 @@ class _PlayerScreenState extends State<PlayerScreen> {
     super.dispose();
   }
 
+  /// Emission en cours sur la chaine, si le guide est charge.
+  Widget _bandeauEpg() {
+    final p = EpgService.instance.maintenant(_current.tvgId);
+    if (p == null) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFF17323A),
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('${p.plage}   ${p.titre}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13)),
+          const SizedBox(height: 5),
+          LinearProgressIndicator(
+            value: p.progression,
+            minHeight: 2,
+            backgroundColor: Colors.white12,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _zoneVideo() {
     return Stack(
       alignment: Alignment.center,
@@ -392,6 +426,23 @@ class _PlayerScreenState extends State<PlayerScreen> {
           ],
         ),
         actions: [
+          if (_pipDispo)
+            IconButton(
+              icon: const Icon(Icons.picture_in_picture_alt),
+              tooltip: 'Fenetre flottante',
+              onPressed: () async {
+                final ok = await PipService.entrer();
+                if (!ok && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          'Fenetre flottante refusee. Autorisez-la dans '
+                          'les parametres Android de l application.'),
+                    ),
+                  );
+                }
+              },
+            ),
           IconButton(
             icon: const Icon(Icons.fullscreen),
             tooltip: 'Plein ecran',
@@ -430,6 +481,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       body: Column(
         children: [
           Expanded(child: _zoneVideo()),
+          _bandeauEpg(),
           Container(
             color: const Color(0xFF161B22),
             padding: const EdgeInsets.symmetric(vertical: 6),

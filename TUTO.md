@@ -1,13 +1,13 @@
-# Passer à la v4 depuis Termux
+# Passer à la v5 depuis Termux
 
 ## Les 3 commandes
 
 ```bash
-cd ~ && cp /sdcard/Download/iptv_player_v4.zip ~/ && unzip -o iptv_player_v4.zip
+cd ~ && cp /sdcard/Download/iptv_player_v5.zip ~/ && unzip -o iptv_player_v5.zip
 ```
 
 ```bash
-cd ~/iptv_player_v4 && cp -r ../iptv_player_v3/.git . && git add -A && git commit -m "Version 4 : test des flux, zapping auto, multi-sources, import export"
+cd ~/iptv_player_v5 && cp -r ../iptv_player_v4/.git . && git add -A && git commit -m "Version 5 : EPG XMLTV, Android TV, picture-in-picture"
 ```
 
 ```bash
@@ -17,37 +17,38 @@ git push
 Puis, une fois les deux jobs verts :
 
 ```bash
-git tag v4.0.0 && git push --tags
+git tag v5.0.0 && git push --tags
 ```
 
 ---
 
-## Prendre en main la v4
+## Prendre en main la v5
 
-### Tester les flux
-Liste des chaînes → bouton **Tester** en haut à droite. Au-delà de 400 chaînes
-une confirmation s'affiche : le test est long. Le plus efficace est de
-filtrer d'abord (recherche, ou une catégorie), puis de tester ce sous-ensemble.
+### Charger le guide des programmes
+Réglages → **Guide des programmes** → cochez une source → **Télécharger le
+guide**. Comptez 30 s à 2 min selon la source. Une fois chargé, l'émission en
+cours apparaît partout, et l'entrée **Guide des programmes** du menu donne la
+grille complète.
 
-Une fois le test fait, l'icône entonnoir apparaît à côté : elle masque les
-chaînes hors ligne.
+Le guide est enregistré sur l'appareil : il survit au redémarrage, et les
+émissions terminées sont purgées au lancement.
 
-### Cocher plusieurs sources
-Réglages → **Sources actives**. Ce sont des cases à cocher, plus des boutons
-radio. Par exemple « Free-TV France » + « iptv-org France » donne une liste
-large sans les doublons.
+### Si la grille reste vide
+C'est le `tvg-id` qui ne correspond pas entre la playlist et le guide. Deux
+pistes, dans cet ordre :
+1. Utilisez une playlist iptv-org (Réglages → sources) plutôt que Free-TV :
+   elle emploie les mêmes identifiants que les guides iptv-org.
+2. Essayez une autre source de guide.
 
-Il faut toujours au moins une source active : décocher la dernière est refusé.
+### Fenêtre flottante
+Bouton rectangle dans le lecteur, sur Android 8+. Au premier appui Android
+peut demander l'autorisation : Paramètres → Applications → Lecteur IPTV →
+Picture-in-picture.
 
-### Importer un fichier .m3u
-Réglages → **Ouvrir un fichier .m3u**. Le fichier est copié dans l'app et
-devient une source cochable, utilisable hors ligne. Attention : vider le cache
-supprime aussi ces fichiers importés, il faudra les réimporter.
-
-### Sauvegarder les favoris
-Réglages → **Exporter** produit un JSON. Sur Android, si la boîte de dialogue
-système n'apparaît pas, le fichier est écrit dans le dossier de l'application
-et le chemin complet s'affiche dans le message.
+### Sur téléviseur
+Installez l'APK `arm64-v8a` sur la box ou le téléviseur. L'application
+apparaît sur l'écran d'accueil Android TV avec sa bannière. Navigation aux
+flèches, OK pour valider, Retour pour remonter.
 
 ---
 
@@ -55,19 +56,20 @@ et le chemin complet s'affiche dans le message.
 
 | Problème | Solution |
 |---|---|
-| Build échoue sur `file_picker` | Envoyez-moi la ligne d'erreur |
-| Le test reste bloqué à 0 | Pas de réseau, ou tous les flux en timeout : attendez 8 s par lot |
-| Tout ressort « hors ligne » | Certains réseaux mobiles bloquent les ports non standard : testez en Wi-Fi |
-| Le zapping saute trop de chaînes | Réglages → désactivez **Zapping automatique** |
-| L'import de favoris ne fait rien | Le fichier doit être un JSON exporté par l'app |
-| Fichier .m3u importé introuvable | Le cache a été vidé : réimportez-le |
+| Build échoue sur `xml` | Envoyez-moi la ligne d'erreur |
+| Build échoue dans `patch_android.py` | Le script affiche l'étape atteinte, envoyez-la |
+| Guide vide après téléchargement | Mismatch de tvg-id, voir plus haut |
+| « Echec : 404 » au téléchargement | L'URL du guide a changé, liste à jour sur github.com/iptv-org/epg |
+| Téléchargement du guide très lent | Certains guides font plusieurs dizaines de Mo, une seule source suffit |
+| Bouton PiP absent | Android 7 ou antérieur, ou Windows : normal |
+| PiP ne fait rien | Autorisation Android à donner dans les paramètres de l'app |
+| Pas de bannière sur la TV | Désinstallez puis réinstallez l'APK |
 | `Updates were rejected` | `git pull --rebase origin main` puis `git push` |
-| Release non créée | Settings → Actions → Workflow permissions → Read and write |
 
 ## Faire le ménage
 
 ```bash
-rm -rf ~/iptv_player_v2 ~/iptv_player_v2.zip ~/iptv_player_v3.zip
+rm -rf ~/iptv_player_v3 ~/iptv_player_v3.zip ~/iptv_player_v4_1.zip
 ```
 
-> Gardez `~/iptv_player_v3` jusqu'à ce que la v4 soit poussée avec succès.
+> Gardez `~/iptv_player_v4` jusqu'à ce que la v5 soit poussée avec succès.

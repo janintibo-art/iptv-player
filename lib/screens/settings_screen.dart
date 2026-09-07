@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/cache_service.dart';
+import '../services/epg_service.dart';
 import '../services/m3u_service.dart';
 import '../services/prefs_service.dart';
 import '../services/sources.dart';
@@ -20,6 +21,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   int _tailleCache = 0;
   bool _occupe = false;
+  String _etapeEpg = '';
 
   @override
   void initState() {
@@ -121,6 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final check = StreamCheckService.instance;
+    final epg = EpgService.instance;
     final perso = Prefs.customSources;
 
     return Stack(
@@ -185,6 +188,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _action(TransfertService.importerPlaylist),
                 ),
               ],
+            ),
+
+            const Divider(height: 40),
+            const Text('Guide des programmes',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 4),
+            const Text(
+              'Cochez une ou plusieurs sources XMLTV, puis lancez le '
+              'telechargement. Le guide se rattache aux chaines par leur '
+              'tvg-id : si la grille reste vide, essayez une autre source.',
+              style: TextStyle(fontSize: 12, color: Colors.white54),
+            ),
+            const SizedBox(height: 10),
+            ...GuidesEpg.presets.map((g) {
+              final actif = Prefs.epgUrls.contains(g.url);
+              return CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                value: actif,
+                title: Text(g.nom),
+                onChanged: (_) async {
+                  await Prefs.toggleEpgUrl(g.url);
+                  setState(() {});
+                },
+              );
+            }),
+            const SizedBox(height: 8),
+            if (epg.enCours)
+              Row(
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(_etapeEpg.isEmpty ? 'Chargement...' : _etapeEpg,
+                        style: const TextStyle(fontSize: 12)),
+                  ),
+                ],
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton.icon(
+                    icon: const Icon(Icons.download_for_offline),
+                    label: const Text('Telecharger le guide'),
+                    onPressed: Prefs.epgUrls.isEmpty
+                        ? null
+                        : () async {
+                            final msg = await epg.charger(
+                              Prefs.epgUrls,
+                              onEtape: (e) {
+                                if (mounted) setState(() => _etapeEpg = e);
+                              },
+                            );
+                            if (!mounted) return;
+                            setState(() => _etapeEpg = '');
+                            _snack(msg);
+                          },
+                  ),
+                  if (epg.disponible)
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Effacer'),
+                      onPressed: () async {
+                        await epg.effacer();
+                        setState(() {});
+                        _snack('Guide efface.');
+                      },
+                    ),
+                ],
+              ),
+            const SizedBox(height: 8),
+            Text(
+              epg.disponible
+                  ? '${epg.nbProgrammes} emissions sur ${epg.nbChaines} chaines.'
+                  : 'Aucun guide charge.',
+              style: const TextStyle(fontSize: 12, color: Colors.white54),
             ),
 
             const Divider(height: 40),
