@@ -12,8 +12,21 @@ class AboutScreen extends StatelessWidget {
       children: const [
         Text('Lecteur IPTV', style: TextStyle(fontSize: 22)),
         SizedBox(height: 4),
-        Text('Version 5.0.0', style: TextStyle(color: Colors.white54)),
+        Text('Version 5.1.0', style: TextStyle(color: Colors.white54)),
         SizedBox(height: 24),
+        Text('Quelles sources choisir', style: gras),
+        SizedBox(height: 8),
+        Text(
+          'Les quatre premieres sources des Reglages sont des services FAST '
+          'officiels et gratuits, finances par la publicite : Pluto TV et '
+          'Samsung TV Plus. Leurs flux sont maintenus par les diffuseurs '
+          'eux-memes, donc ils ne tombent quasiment jamais, contrairement aux '
+          'listes communautaires ou une bonne part des liens est morte.\n\n'
+          'Elles ont un second avantage : leur guide des programmes emploie '
+          'exactement les memes identifiants de chaine, donc la grille se '
+          'remplit du premier coup. Cochez la source et le guide du meme nom.',
+        ),
+        SizedBox(height: 20),
         Text('Guide des programmes', style: gras),
         SizedBox(height: 8),
         Text(

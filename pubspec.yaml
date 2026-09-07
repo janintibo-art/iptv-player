@@ -1,7 +1,7 @@
 name: iptv_player
 description: Lecteur IPTV multiplateforme (Android, Android TV, Windows).
 publish_to: 'none'
-version: 5.0.0+6
+version: 5.1.0+7
 
 environment:
   sdk: '>=3.3.0 <4.0.0'

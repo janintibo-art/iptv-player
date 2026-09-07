@@ -12,7 +12,35 @@ class Sources {
       'https://iptv-org.github.io/iptv/index.m3u';
 
   /// Sources francophones et generales.
+  ///
+  /// Les quatre premieres sont des services FAST officiels, gratuits et
+  /// finances par la publicite. Leurs flux sont maintenus par les
+  /// diffuseurs : ils ne tombent quasiment jamais, et leur EPG assorti
+  /// utilise les memes identifiants, donc la grille se remplit du premier
+  /// coup.
   static const List<SourcePreset> presets = [
+    SourcePreset(
+      'Pluto TV France',
+      'https://i.mjh.nz/PlutoTV/fr.m3u8',
+      'Service officiel gratuit, une quarantaine de chaines francaises. '
+          'Guide assorti disponible. Le plus fiable.',
+    ),
+    SourcePreset(
+      'Samsung TV Plus France',
+      'https://i.mjh.nz/SamsungTVPlus/fr.m3u8',
+      'Service officiel gratuit de Samsung, chaines francaises. '
+          'Guide assorti disponible.',
+    ),
+    SourcePreset(
+      'Pluto TV Canada',
+      'https://i.mjh.nz/PlutoTV/ca.m3u8',
+      'Service officiel gratuit, chaines canadiennes dont du francophone.',
+    ),
+    SourcePreset(
+      'Samsung TV Plus Suisse',
+      'https://i.mjh.nz/SamsungTVPlus/ch.m3u8',
+      'Service officiel gratuit, chaines suisses.',
+    ),
     SourcePreset(
       'Free-TV France',
       'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_france.m3u8',

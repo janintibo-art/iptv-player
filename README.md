@@ -1,7 +1,15 @@
-# Lecteur IPTV — v5
+# Lecteur IPTV — v5.1
 
 Lecteur de playlists M3U publiques, écrit en Flutter.
 Android, **Android TV** et Windows depuis un seul code source.
+
+## Nouveautés de la v5.1
+
+Quatre sources **FAST** officielles ajoutées aux presets, avec leur guide
+assorti : Pluto TV France, Samsung TV Plus France, Pluto TV Canada, Samsung
+TV Plus Suisse. Flux maintenus par les diffuseurs, quasiment jamais morts, et
+identifiants de chaîne identiques entre playlist et EPG — la grille se remplit
+sans réglage. Pluto TV France devient la source par défaut.
 
 ## Nouveautés de la v5
 

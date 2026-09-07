@@ -1,54 +1,61 @@
-# Passer à la v5 depuis Termux
+# Passer à la v5.1 depuis Termux
 
 ## Les 3 commandes
 
 ```bash
-cd ~ && cp /sdcard/Download/iptv_player_v5.zip ~/ && unzip -o iptv_player_v5.zip
+cd ~ && cp /sdcard/Download/iptv_player_v5_1.zip ~/ && unzip -o iptv_player_v5_1.zip
 ```
 
 ```bash
-cd ~/iptv_player_v5 && cp -r ../iptv_player_v4/.git . && git add -A && git commit -m "Version 5 : EPG XMLTV, Android TV, picture-in-picture"
+cd ~/iptv_player_v5 && git add -A && git commit -m "Version 5.1 : sources FAST officielles et leurs guides"
 ```
 
 ```bash
 git push
 ```
 
+> Le zip contient le même dossier `iptv_player_v5`, il se décompresse
+> par-dessus l'existant sans toucher au `.git`.
+
 Puis, une fois les deux jobs verts :
 
 ```bash
-git tag v5.0.0 && git push --tags
+git tag v5.1.0 && git push --tags
 ```
 
 ---
 
-## Prendre en main la v5
+## La combinaison à essayer en premier
 
-### Charger le guide des programmes
-Réglages → **Guide des programmes** → cochez une source → **Télécharger le
-guide**. Comptez 30 s à 2 min selon la source. Une fois chargé, l'émission en
-cours apparaît partout, et l'entrée **Guide des programmes** du menu donne la
-grille complète.
+Réglages → **Sources actives** → cochez **Pluto TV France**.
+Réglages → **Guide des programmes** → cochez **Pluto TV France (recommandé)**
+→ **Télécharger le guide**.
 
-Le guide est enregistré sur l'appareil : il survit au redémarrage, et les
-émissions terminées sont purgées au lancement.
+C'est le seul couple où playlist et EPG partagent les mêmes identifiants : la
+grille doit se remplir immédiatement. Si ça marche, ajoutez Samsung TV Plus
+France par-dessus, les deux fusionnent sans doublon.
 
-### Si la grille reste vide
-C'est le `tvg-id` qui ne correspond pas entre la playlist et le guide. Deux
-pistes, dans cet ordre :
-1. Utilisez une playlist iptv-org (Réglages → sources) plutôt que Free-TV :
-   elle emploie les mêmes identifiants que les guides iptv-org.
-2. Essayez une autre source de guide.
+Ensuite seulement, ajoutez les listes iptv-org si vous voulez du volume — en
+sachant qu'une bonne part de leurs liens sont morts, d'où le bouton **Tester**.
 
-### Fenêtre flottante
-Bouton rectangle dans le lecteur, sur Android 8+. Au premier appui Android
-peut demander l'autorisation : Paramètres → Applications → Lecteur IPTV →
-Picture-in-picture.
+## Toutes les sources disponibles
 
-### Sur téléviseur
-Installez l'APK `arm64-v8a` sur la box ou le téléviseur. L'application
-apparaît sur l'écran d'accueil Android TV avec sa bannière. Navigation aux
-flèches, OK pour valider, Retour pour remonter.
+| Source | Type | Fiabilité |
+|---|---|---|
+| Pluto TV France | FAST officiel | très bonne |
+| Samsung TV Plus France | FAST officiel | très bonne |
+| Pluto TV Canada | FAST officiel | très bonne |
+| Samsung TV Plus Suisse | FAST officiel | très bonne |
+| Free-TV France | communautaire filtré | bonne |
+| iptv-org France / Belgique / Suisse / Canada | communautaire | moyenne |
+| iptv-org langue française | communautaire | moyenne |
+| Free-TV Monde | communautaire filtré | bonne |
+| iptv-org complet | communautaire | faible, ~15 000 chaînes |
+
+Pour d'autres pays, ajoutez une URL personnalisée sur le motif
+`https://iptv-org.github.io/iptv/countries/XX.m3u` — par exemple `sn`, `ci`,
+`cm`, `ml`, `cd`, `bf`, `ga`, `tg`, `bj`, `mg` pour l'Afrique francophone,
+ou `subdivisions/ca-qc.m3u` pour le Québec seul.
 
 ---
 
@@ -56,20 +63,8 @@ flèches, OK pour valider, Retour pour remonter.
 
 | Problème | Solution |
 |---|---|
-| Build échoue sur `xml` | Envoyez-moi la ligne d'erreur |
-| Build échoue dans `patch_android.py` | Le script affiche l'étape atteinte, envoyez-la |
-| Guide vide après téléchargement | Mismatch de tvg-id, voir plus haut |
-| « Echec : 404 » au téléchargement | L'URL du guide a changé, liste à jour sur github.com/iptv-org/epg |
-| Téléchargement du guide très lent | Certains guides font plusieurs dizaines de Mo, une seule source suffit |
-| Bouton PiP absent | Android 7 ou antérieur, ou Windows : normal |
-| PiP ne fait rien | Autorisation Android à donner dans les paramètres de l'app |
-| Pas de bannière sur la TV | Désinstallez puis réinstallez l'APK |
+| Pluto TV ne charge pas | Le service n'est pas distribué partout, essayez Samsung TV Plus |
+| Grille toujours vide | Vérifiez que source et guide portent le même nom |
+| Coupures pendant les publicités | Normal sur les FAST, le flux se recale seul |
 | `Updates were rejected` | `git pull --rebase origin main` puis `git push` |
-
-## Faire le ménage
-
-```bash
-rm -rf ~/iptv_player_v3 ~/iptv_player_v3.zip ~/iptv_player_v4_1.zip
-```
-
-> Gardez `~/iptv_player_v4` jusqu'à ce que la v5 soit poussée avec succès.
+| Build échoue | Envoyez-moi la ligne d'erreur du log Actions |

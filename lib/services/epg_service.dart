@@ -57,12 +57,31 @@ class Programme {
       );
 }
 
-/// Guides preconfigures du projet iptv-org.
+/// Guides preconfigures.
 ///
-/// Les adresses suivent le motif guides/<langue>/<site>.xml. Elles peuvent
-/// changer : la liste a jour se trouve sur github.com/iptv-org/epg.
+/// Les quatre premiers accompagnent les sources FAST du meme nom : leurs
+/// identifiants de chaine correspondent exactement, la grille se remplit
+/// sans reglage. Les suivants viennent d iptv-org et suivent le motif
+/// guides/<langue>/<site>.xml ; ces adresses peuvent changer, la liste a
+/// jour est sur github.com/iptv-org/epg.
 class GuidesEpg {
   static const List<({String nom, String url})> presets = [
+    (
+      nom: 'Pluto TV France (recommande)',
+      url: 'https://i.mjh.nz/PlutoTV/fr.xml'
+    ),
+    (
+      nom: 'Samsung TV Plus France (recommande)',
+      url: 'https://i.mjh.nz/SamsungTVPlus/fr.xml'
+    ),
+    (
+      nom: 'Pluto TV Canada',
+      url: 'https://i.mjh.nz/PlutoTV/ca.xml'
+    ),
+    (
+      nom: 'Samsung TV Plus Suisse',
+      url: 'https://i.mjh.nz/SamsungTVPlus/ch.xml'
+    ),
     (
       nom: 'France - Orange',
       url: 'https://iptv-org.github.io/epg/guides/fr/chaines-tv.orange.fr.xml'
