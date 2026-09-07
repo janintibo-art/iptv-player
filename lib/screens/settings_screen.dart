@@ -304,6 +304,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 6),
             const Text(
+              'L export ecrit un fichier JSON dans le dossier de l application. '
               'L import ajoute les favoris aux votres sans rien ecraser.',
               style: TextStyle(fontSize: 12, color: Colors.white54),
             ),
