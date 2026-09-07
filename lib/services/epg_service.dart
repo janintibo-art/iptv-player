@@ -58,31 +58,52 @@ class Programme {
       );
 }
 
-/// Guides preconfigures.
+/// Guides preconfigures, verifies un par un.
 ///
-/// Les quatre premiers viennent d iptv-org et suivent le motif
-/// guides/<langue>/<site>.xml ; ces adresses peuvent changer, la liste a
-/// jour est sur github.com/iptv-org/epg.
-///
-/// Les deux derniers sont les guides des services FAST. Ils restent
-/// publies, mais leurs playlists ne le sont plus : ils ne servent que si
-/// vous fournissez vous-meme une playlist Pluto ou Samsung.
+/// EPGShare couvre le plus de chaines et livre du gzip, d ou l analyse en
+/// flux plus bas. Les guides iptv-org sont plus legers mais moins fournis.
+/// Les deux derniers ne servent que si vous apportez vous-meme une
+/// playlist Pluto ou Samsung : leurs playlists ne sont plus publiees.
 class GuidesEpg {
   static const List<({String nom, String url})> presets = [
     (
-      nom: 'France - Orange',
+      nom: 'France - EPGShare (le plus complet)',
+      url: 'https://epgshare01.online/epgshare01/epg_ripper_FR1.xml.gz'
+    ),
+    (
+      nom: 'Belgique - EPGShare',
+      url: 'https://epgshare01.online/epgshare01/epg_ripper_BE2.xml.gz'
+    ),
+    (
+      nom: 'Suisse - EPGShare',
+      url: 'https://epgshare01.online/epgshare01/epg_ripper_CH1.xml.gz'
+    ),
+    (
+      nom: 'Canada - EPGShare',
+      url: 'https://epgshare01.online/epgshare01/epg_ripper_CA2.xml.gz'
+    ),
+    (
+      nom: 'Luxembourg - EPGShare',
+      url: 'https://epgshare01.online/epgshare01/epg_ripper_LU1.xml.gz'
+    ),
+    (
+      nom: 'beIN Sports - EPGShare',
+      url: 'https://epgshare01.online/epgshare01/epg_ripper_BEIN1.xml.gz'
+    ),
+    (
+      nom: 'France - Orange (iptv-org)',
       url: 'https://iptv-org.github.io/epg/guides/fr/chaines-tv.orange.fr.xml'
     ),
     (
-      nom: 'France - Programme TV',
+      nom: 'France - Programme TV (iptv-org)',
       url: 'https://iptv-org.github.io/epg/guides/fr/programme-tv.net.xml'
     ),
     (
-      nom: 'France - Telerama',
+      nom: 'France - Telerama (iptv-org)',
       url: 'https://iptv-org.github.io/epg/guides/fr/telerama.fr.xml'
     ),
     (
-      nom: 'Quebec - TV Hebdo',
+      nom: 'Quebec - TV Hebdo (iptv-org)',
       url: 'https://iptv-org.github.io/epg/guides/ca/tvhebdo.com.xml'
     ),
     (
@@ -161,13 +182,10 @@ class EpgService {
 
     try {
       for (final url in urls) {
-        etape = 'Telechargement ${_court(url)}';
+        etape = 'Lecture de ${_court(url)}';
         onEtape?.call(etape);
         try {
-          final texte = await _telecharger(url);
-          etape = 'Analyse ${_court(url)}';
-          onEtape?.call(etape);
-          total += await _analyser(texte);
+          total += await _telechargerEtAnalyser(url);
         } catch (e) {
           erreurs.add('${_court(url)} : $e');
         }
@@ -199,64 +217,73 @@ class EpgService {
     return s.isEmpty ? url : s.last;
   }
 
-  /// Recupere le fichier, en decompressant le gzip si necessaire.
-  static Future<String> _telecharger(String url) async {
-    final res = await http
-        .get(Uri.parse(url), headers: {'User-Agent': 'IptvPlayer/5.0'})
-        .timeout(const Duration(seconds: 120));
-
-    if (res.statusCode != 200) {
-      throw Exception('HTTP ${res.statusCode}');
-    }
-
-    List<int> octets = res.bodyBytes;
-    // Signature gzip : 1f 8b. Certains guides sont servis compresses.
-    if (octets.length > 2 && octets[0] == 0x1f && octets[1] == 0x8b) {
-      octets = gzip.decode(octets);
-    }
-    return utf8.decode(octets, allowMalformed: true);
-  }
-
-  /// Analyse un document XMLTV en flux, sans construire l arbre complet.
-  Future<int> _analyser(String contenu) async {
+  /// Telecharge et analyse un guide sans jamais le charger entierement
+  /// en memoire : les octets sont decompresses puis decodes au fil de
+  /// l eau, et les emissions hors fenetre sont jetees immediatement.
+  ///
+  /// Un guide national fait couramment 50 Mo une fois decompresse : le
+  /// tenir en memoire ferait tomber l application sur telephone.
+  Future<int> _telechargerEtAnalyser(String url) async {
+    final client = http.Client();
     final debutFenetre = DateTime.now().subtract(_avant);
     final finFenetre = DateTime.now().add(_apres);
     var gardes = 0;
 
-    await Stream.value(contenu)
-        .toXmlEvents()
-        .normalizeEvents()
-        .selectSubtreeEvents((e) => e.localName == 'programme')
-        .toXmlNodes()
-        .forEach((noeuds) {
-      for (final n in noeuds) {
-        if (n is! XmlElement) continue;
+    try {
+      final req = http.Request('GET', Uri.parse(url))
+        ..followRedirects = true;
+      req.headers['User-Agent'] = 'IptvPlayer/6.0';
 
-        final chaine = n.getAttribute('channel');
-        final debut = _date(n.getAttribute('start'));
-        final fin = _date(n.getAttribute('stop'));
-        if (chaine == null || debut == null || fin == null) continue;
-
-        // Hors de la fenetre utile : on jette.
-        if (fin.isBefore(debutFenetre) || debut.isAfter(finFenetre)) continue;
-        if (gardes >= _maxProgrammes) return;
-
-        final titre = n.getElement('title')?.innerText.trim() ?? '';
-        if (titre.isEmpty) continue;
-
-        var desc = n.getElement('desc')?.innerText.trim() ?? '';
-        if (desc.length > 400) desc = '${desc.substring(0, 400)}...';
-
-        _parChaine.putIfAbsent(chaine, () => []).add(Programme(
-              chaine: chaine,
-              debut: debut,
-              fin: fin,
-              titre: titre,
-              description: desc,
-            ));
-        gardes++;
+      final res = await client.send(req).timeout(const Duration(seconds: 120));
+      if (res.statusCode != 200) {
+        throw Exception('HTTP ${res.statusCode}');
       }
-    });
+
+      Stream<List<int>> octets = res.stream;
+      if (url.toLowerCase().endsWith('.gz')) {
+        octets = octets.transform(gzip.decoder);
+      }
+
+      final texte = octets.transform(const Utf8Decoder(allowMalformed: true));
+
+      await texte
+          .toXmlEvents()
+          .normalizeEvents()
+          .selectSubtreeEvents((e) => e.localName == 'programme')
+          .toXmlNodes()
+          .forEach((noeuds) {
+        for (final n in noeuds) {
+          if (n is! XmlElement) continue;
+
+          final chaine = n.getAttribute('channel');
+          final debut = _date(n.getAttribute('start'));
+          final fin = _date(n.getAttribute('stop'));
+          if (chaine == null || debut == null || fin == null) continue;
+
+          if (fin.isBefore(debutFenetre) || debut.isAfter(finFenetre)) {
+            continue;
+          }
+          if (gardes >= _maxProgrammes) return;
+
+          final titre = n.getElement('title')?.innerText.trim() ?? '';
+          if (titre.isEmpty) continue;
+
+          var desc = n.getElement('desc')?.innerText.trim() ?? '';
+          if (desc.length > 400) desc = '${desc.substring(0, 400)}...';
+
+          _parChaine.putIfAbsent(chaine, () => []).add(Programme(
+                chaine: chaine,
+                debut: debut,
+                fin: fin,
+                titre: titre,
+                description: desc,
+              ));
+          gardes++;
+        }
+      });
+    } finally {
+      client.close();
+    }
 
     return gardes;
   }
