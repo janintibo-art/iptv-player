@@ -12,8 +12,34 @@ class AboutScreen extends StatelessWidget {
       children: const [
         Text('Lecteur IPTV', style: TextStyle(fontSize: 22)),
         SizedBox(height: 4),
-        Text('Version 5.2.0', style: TextStyle(color: Colors.white54)),
+        Text('Version 6.0.0', style: TextStyle(color: Colors.white54)),
         SizedBox(height: 24),
+        Text('Mon serveur : le mode API', style: gras),
+        SizedBox(height: 8),
+        Text(
+          'Un serveur Xtream peut etre connecte de deux facons.\n\n'
+          'Mode API, recommande : rien n est telecharge d avance. '
+          'L application interroge le serveur categorie par categorie, ce qui '
+          'donne acces au direct, au catalogue de films, aux series avec '
+          'leurs saisons et episodes, et aux rediffusions des emissions '
+          'passees quand le serveur les conserve. Tout se passe dans '
+          'l entree "Mon serveur" du menu.\n\n'
+          'Mode M3U : la playlist entiere est telechargee et fusionnee avec '
+          'vos autres sources. Plus lent au demarrage et sans films ni '
+          'series, mais compatible avec absolument tous les serveurs.\n\n'
+          'Vous pouvez enregistrer plusieurs serveurs et passer de l un a '
+          'l autre.',
+        ),
+        SizedBox(height: 20),
+        Text('Rediffusions', style: gras),
+        SizedBox(height: 8),
+        Text(
+          'Dans la liste des chaines en mode API, une icone horloge apparait '
+          'sur celles dont le serveur garde un enregistrement, avec le nombre '
+          'de jours conserves. Elle ouvre la liste des emissions passees : '
+          'touchez-en une pour la revoir depuis le debut.',
+        ),
+        SizedBox(height: 20),
         Text('Flux et serveurs', style: gras),
         SizedBox(height: 8),
         Text(

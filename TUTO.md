@@ -1,93 +1,76 @@
-# Passer à la v5.2 depuis Termux
+# Passer à la v6 depuis Termux
 
 ## Les 3 commandes
 
 ```bash
-cd ~ && cp /sdcard/Download/iptv_player_v5_2.zip ~/ && unzip -o iptv_player_v5_2.zip
+cd ~ && cp /sdcard/Download/iptv_player_v6.zip ~/ && unzip -o iptv_player_v6.zip
 ```
 
 ```bash
-cd ~/iptv_player_v5 && git add -A && git commit -m "Version 5.2 : flux manuels, Xtream Codes, en-tetes HTTP"
+cd ~/iptv_player_v5 && git add -A && git commit -m "Version 6 : API Xtream complete, films, series, rediffusions"
 ```
 
 ```bash
 git push
 ```
 
-> Le zip contient le même dossier `iptv_player_v5`, il se décompresse
-> par-dessus sans toucher au `.git`.
+> Le zip garde le dossier `iptv_player_v5` pour ne pas perdre le `.git`.
+> Le nom du dossier ne suit plus la version, c'est volontaire.
 
 Puis :
 
 ```bash
-git tag v5.2.0 && git push --tags
+git tag v6.0.0 && git push --tags
 ```
 
 ---
 
-## Se connecter à votre serveur
+## Connecter votre serveur en mode API
 
 Menu → **Flux et serveurs** → section **Serveur Xtream Codes**.
 
-| Champ | Exemple |
+Remplissez adresse, port, identifiant, mot de passe, puis
+**Connecter en mode API**.
+
+L'app vérifie d'abord les identifiants et affiche la date d'expiration. Rien
+n'est téléchargé : le compte est simplement enregistré.
+
+Ensuite, menu → **Mon serveur** → touchez le compte. Trois onglets :
+
+| Onglet | Contenu |
 |---|---|
-| Adresse | `monserveur.tv` ou `http://192.168.1.50` |
-| Port | `8080` (laissez vide si l'adresse le contient déjà) |
-| Identifiant | votre login |
-| Mot de passe | votre mot de passe |
+| Direct | catégories de chaînes, puis les chaînes |
+| Films | catégories, puis le catalogue |
+| Séries | catégories, puis saisons dépliables |
 
-**Se connecter** interroge `player_api.php`. En cas de succès, l'app affiche
-la date d'expiration et le nombre de connexions autorisées, puis ajoute
-automatiquement deux choses : la playlist dans les sources actives, et le
-guide XMLTV du serveur dans la section EPG.
+Chaque écran a un champ de filtre, indispensable au-delà de quelques
+centaines d'entrées.
 
-Ouvrez ensuite **Toutes les chaînes**.
+## Revoir une émission
 
-### Messages d'erreur
+Dans l'onglet Direct, les chaînes archivées portent une **icône horloge** et
+la mention du nombre de jours conservés. Touchez l'icône : la liste des
+émissions passées apparaît, avec date, horaire et durée. Touchez-en une pour
+la revoir depuis le début.
 
-| Message | Cause |
-|---|---|
-| Identifiants refusés | Login ou mot de passe faux |
-| Compte expiré le ... | Abonnement terminé |
-| Réponse inattendue | Ce n'est pas un serveur Xtream Codes |
-| Serveur injoignable | Adresse ou port faux, serveur hors ligne, ou pare-feu |
+Si la liste est vide, c'est que le serveur ne fournit pas de guide pour cette
+chaîne, même s'il annonce l'archivage.
 
-## Ouvrir un flux isolé
+## Mode M3U : quand l'utiliser
 
-Même écran, section **Ouvrir un flux**. Collez l'adresse, appuyez sur
-**Lire**. Deux boutons à ne pas confondre :
+Le bouton **Mode M3U simple** reste utile dans deux cas :
 
-- **Lire** traite l'adresse comme un flux vidéo et l'ouvre directement
-- **Ajouter comme playlist** traite l'adresse comme un fichier `.m3u` à
-  analyser, et l'ajoute aux sources
+- le serveur n'expose pas l'API correctement, ou renvoie « Réponse
+  inattendue » alors que la playlist fonctionne dans VLC
+- vous voulez fusionner les chaînes du serveur avec vos autres sources dans
+  un seul écran « Toutes les chaînes »
 
-Exemples qui fonctionnent :
+Les deux modes peuvent coexister sur le même serveur.
 
-```
-http://192.168.1.20:8080/live.m3u8
-rtsp://192.168.1.30:554/stream1
-udp://@239.0.0.1:1234
-```
+## Plusieurs serveurs
 
-## Erreur 403 sur un flux
-
-Certains serveurs vérifient le `User-Agent` ou le `Referer`. Dépliez
-**En-têtes HTTP** avant de lire, et renseignez la valeur attendue. Pour
-l'appliquer à tous les flux, utilisez la section **En-têtes par défaut** en
-bas de l'écran.
-
-Une valeur qui débloque beaucoup de cas :
-
-```
-Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36
-```
-
-## Note sur les mots de passe
-
-Le protocole Xtream Codes met les identifiants en clair dans l'URL de la
-playlist, c'est ainsi qu'il est conçu. Ils sont donc stockés tels quels sur
-l'appareil. N'exportez pas et ne partagez pas vos réglages si vous avez
-enregistré un serveur privé.
+Chaque connexion en mode API ajoute un compte. Menu → **Mon serveur** les
+liste tous, et l'icône corbeille en retire un.
 
 ---
 
@@ -95,8 +78,18 @@ enregistré un serveur privé.
 
 | Problème | Solution |
 |---|---|
-| Le flux `udp://` ne marche pas sur mobile | Le multicast passe mal en Wi-Fi, testez en filaire sur la box |
-| `rtsp://` saccadé | Essayez d'ajouter `?tcp` selon la caméra |
-| Serveur local injoignable | Vérifiez que le téléphone est sur le même réseau |
-| Playlist Xtream vide | Le serveur répond mais n'expose rien : vérifiez le type de compte |
+| « Réponse inattendue » | Le serveur n'est pas Xtream, ou l'API est désactivée : utilisez le mode M3U |
+| « Identifiants refusés » | Login ou mot de passe faux |
+| « Compte expiré » | Abonnement terminé |
+| Onglet Films ou Séries vide | Votre offre ne les inclut pas |
+| Une série n'affiche aucun épisode | Le serveur renvoie un format non standard, dites-le moi |
+| Rediffusion qui ne démarre pas | Le serveur n'a pas d'enregistrement pour ce créneau |
+| Lecture qui coupe après quelques secondes | Nombre de connexions simultanées dépassé |
+| Liste très lente à s'ouvrir | Catégorie volumineuse : utilisez le filtre |
 | `Updates were rejected` | `git pull --rebase origin main` puis `git push` |
+
+## Mots de passe
+
+Les identifiants sont stockés en clair sur l'appareil : le protocole Xtream
+les met de toute façon dans chaque URL de flux. N'exportez pas vos réglages
+et ne partagez pas de captures montrant une URL complète.

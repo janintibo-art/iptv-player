@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../models/channel.dart';
+import '../models/xtream.dart';
 import '../services/m3u_service.dart';
 import '../services/prefs_service.dart';
 import '../services/sources.dart';
 import '../services/xtream_service.dart';
 import 'player_screen.dart';
+import 'xtream_screen.dart';
 
 /// Ouverture manuelle de flux et connexion a un serveur, dans l esprit du
 /// "Ouvrir un flux reseau" de VLC.
@@ -78,15 +80,25 @@ class _NetworkScreenState extends State<NetworkScreen> {
     );
   }
 
-  Future<void> _connecterServeur() async {
+  XtreamAccount _compteSaisi() {
+    final base = XtreamService.normaliserBase(_hote.text, port: _port.text);
+    return XtreamAccount(
+      nom: base.isEmpty ? 'Serveur' : '${Uri.parse(base).host} (${_user.text.trim()})',
+      base: base,
+      user: _user.text.trim(),
+      pass: _pass.text,
+    );
+  }
+
+  /// Verifie les identifiants, puis enregistre le compte selon le mode.
+  Future<void> _connecterServeur({required bool modeApi}) async {
     setState(() {
       _testEnCours = true;
       _info = null;
     });
 
-    final base = XtreamService.normaliserBase(_hote.text, port: _port.text);
-    final info = await XtreamService.tester(
-        base, _user.text.trim(), _pass.text);
+    final compte = _compteSaisi();
+    final info = await XtreamService.instance.tester(compte);
 
     if (!mounted) return;
     setState(() {
@@ -96,13 +108,21 @@ class _NetworkScreenState extends State<NetworkScreen> {
 
     if (!info.ok) return;
 
-    final playlist =
-        XtreamService.urlPlaylist(base, _user.text.trim(), _pass.text);
-    final epg = XtreamService.urlEpg(base, _user.text.trim(), _pass.text);
-    final etiquette = '${Uri.parse(base).host} (${_user.text.trim()})';
+    if (modeApi) {
+      // Mode API : rien n est telecharge, tout se charge a la demande.
+      await Prefs.ajouterCompte(compte);
+      if (!mounted) return;
+      setState(() {});
+      _snack('Serveur enregistre. Ouvrez "Mon serveur" dans le menu.');
+      return;
+    }
+
+    // Mode M3U : on ajoute la playlist et le guide aux sources classiques.
+    final playlist = XtreamService.urlPlaylist(compte);
+    final epg = XtreamService.urlEpg(compte);
 
     await Prefs.addCustomSource(SourcePreset(
-      etiquette,
+      compte.nom,
       playlist,
       'Serveur Xtream Codes'
       '${info.expiration == null ? '' : ', valide jusqu au '
@@ -119,7 +139,7 @@ class _NetworkScreenState extends State<NetworkScreen> {
     M3uService.instance.clearMemory();
     if (!mounted) return;
     setState(() {});
-    _snack('Serveur ajoute aux sources. Ouvrez "Toutes les chaines".');
+    _snack('Playlist ajoutee aux sources. Ouvrez "Toutes les chaines".');
   }
 
   Widget _titre(String t) => Padding(
@@ -276,8 +296,7 @@ class _NetworkScreenState extends State<NetworkScreen> {
         _titre('Serveur Xtream Codes'),
         const Text(
           'Le protocole des panels IPTV. Entrez l adresse, l identifiant et '
-          'le mot de passe : l application construit seule la playlist et le '
-          'guide, puis les ajoute a vos sources.',
+          'le mot de passe, puis choisissez le mode de connexion.',
           style: TextStyle(fontSize: 12, color: Colors.white54),
         ),
         const SizedBox(height: 12),
@@ -353,11 +372,30 @@ class _NetworkScreenState extends State<NetworkScreen> {
             ],
           )
         else
-          FilledButton.icon(
-            icon: const Icon(Icons.dns),
-            label: const Text('Se connecter'),
-            onPressed: _connecterServeur,
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton.icon(
+                icon: const Icon(Icons.api),
+                label: const Text('Connecter en mode API'),
+                onPressed: () => _connecterServeur(modeApi: true),
+              ),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.playlist_add),
+                label: const Text('Mode M3U simple'),
+                onPressed: () => _connecterServeur(modeApi: false),
+              ),
+            ],
           ),
+        const SizedBox(height: 10),
+        const Text(
+          'Mode API : films, series, catch-up et guide charges a la demande, '
+          'depuis l entree "Mon serveur" du menu. C est le mode recommande.\n'
+          'Mode M3U : la playlist entiere est telechargee et fusionnee avec '
+          'vos autres sources. Plus lent, mais compatible avec tout serveur.',
+          style: TextStyle(fontSize: 12, color: Colors.white54),
+        ),
         if (_info != null) ...[
           const SizedBox(height: 12),
           Card(

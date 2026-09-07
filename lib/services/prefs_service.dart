@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/channel.dart';
+import '../models/xtream.dart';
 import 'sources.dart';
 
 /// Stockage local : favoris, historique et reglages.
@@ -21,6 +22,7 @@ class Prefs {
   static const _kFluxDirects = 'flux_directs';
   static const _kUserAgent = 'user_agent';
   static const _kReferer = 'referer';
+  static const _kComptes = 'comptes_xtream';
 
   static Future<void> init() async {
     _p = await SharedPreferences.getInstance();
@@ -122,6 +124,34 @@ class Prefs {
 
   static String get referer => _p.getString(_kReferer) ?? '';
   static Future<void> setReferer(String v) => _p.setString(_kReferer, v);
+
+  // ---- Comptes de serveurs Xtream ----
+  static List<XtreamAccount> get comptes {
+    final raw = _p.getString(_kComptes);
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      return (jsonDecode(raw) as List)
+          .whereType<Map<String, dynamic>>()
+          .map(XtreamAccount.fromJson)
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<void> _ecrireComptes(List<XtreamAccount> l) =>
+      _p.setString(_kComptes, jsonEncode(l.map((c) => c.toJson()).toList()));
+
+  static Future<void> ajouterCompte(XtreamAccount c) async {
+    final l = comptes..removeWhere((e) => e.id == c.id);
+    l.insert(0, c);
+    await _ecrireComptes(l);
+  }
+
+  static Future<void> retirerCompte(String id) async {
+    final l = comptes..removeWhere((e) => e.id == id);
+    await _ecrireComptes(l);
+  }
 
   // ---- Flux ouverts a la main ----
   static List<Channel> get fluxDirects => _read(_kFluxDirects);
