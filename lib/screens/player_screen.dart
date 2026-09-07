@@ -103,6 +103,21 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return null;
   }
 
+  /// En-tetes envoyes au serveur : ceux de la chaine, sinon ceux des
+  /// reglages. Sans cela certains serveurs renvoient une erreur 403.
+  Map<String, String>? _entetes() {
+    final ua = _current.userAgent.isNotEmpty
+        ? _current.userAgent
+        : Prefs.userAgent;
+    final ref =
+        _current.referer.isNotEmpty ? _current.referer : Prefs.referer;
+
+    final h = <String, String>{};
+    if (ua.isNotEmpty) h['User-Agent'] = ua;
+    if (ref.isNotEmpty) h['Referer'] = ref;
+    return h.isEmpty ? null : h;
+  }
+
   Future<void> _open() async {
     _minuteur?.cancel();
     setState(() {
@@ -112,7 +127,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     });
 
     await Prefs.pushRecent(_current);
-    await _player.open(Media(_current.url));
+    await _player.open(Media(_current.url, httpHeaders: _entetes()));
 
     // Si rien ne demarre dans le delai imparti, on passe a la suite.
     _minuteur = Timer(_delaiDemarrage, () {

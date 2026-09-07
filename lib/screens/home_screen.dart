@@ -7,6 +7,7 @@ import 'about_screen.dart';
 import 'channel_list_screen.dart';
 import 'epg_screen.dart';
 import 'group_list_screen.dart';
+import 'network_screen.dart';
 import 'settings_screen.dart';
 
 enum Section {
@@ -17,6 +18,7 @@ enum Section {
   categories,
   countries,
   languages,
+  network,
   settings,
   about
 }
@@ -55,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Section.categories => 'Categories',
         Section.countries => 'Pays',
         Section.languages => 'Langues',
+        Section.network => 'Flux et serveurs',
         Section.settings => 'Reglages',
         Section.about => 'Aide et a propos',
       };
@@ -168,6 +171,9 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icons.translate,
         );
 
+      case Section.network:
+        return const NetworkScreen();
+
       case Section.settings:
         return const SettingsScreen();
 
@@ -223,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           size: 44, color: Color(0xFF7FD4E8))),
                   const SizedBox(height: 10),
                   const Text('Lecteur IPTV', style: TextStyle(fontSize: 20)),
-                  Text('v5 - $nbSources source(s) active(s)',
+                  Text('v5.2 - $nbSources source(s) active(s)',
                       style: const TextStyle(
                           fontSize: 12, color: Colors.white54)),
                 ],
@@ -245,6 +251,8 @@ class _HomeScreenState extends State<HomeScreen> {
             _item(Section.languages, Icons.translate, 'Langues',
                 sub: 'Regroupe par langue'),
             const Divider(),
+            _item(Section.network, Icons.dns, 'Flux et serveurs',
+                sub: 'Adresse directe, Xtream Codes'),
             _item(Section.settings, Icons.settings, 'Reglages',
                 sub: 'Sources, tests, sauvegarde'),
             _item(Section.about, Icons.help_outline, 'Aide et a propos'),

@@ -12,8 +12,28 @@ class AboutScreen extends StatelessWidget {
       children: const [
         Text('Lecteur IPTV', style: TextStyle(fontSize: 22)),
         SizedBox(height: 4),
-        Text('Version 5.1.0', style: TextStyle(color: Colors.white54)),
+        Text('Version 5.2.0', style: TextStyle(color: Colors.white54)),
         SizedBox(height: 24),
+        Text('Flux et serveurs', style: gras),
+        SizedBox(height: 8),
+        Text(
+          'L entree "Flux et serveurs" du menu reprend le principe du '
+          '"Ouvrir un flux reseau" de VLC.\n\n'
+          'Ouvrir un flux : collez une adresse et lisez-la directement, sans '
+          'playlist. Les protocoles http, https, rtsp, rtmp, udp et les '
+          'fichiers locaux fonctionnent. Utile pour une camera, un serveur '
+          'domestique ou un flux teste au coup par coup.\n\n'
+          'Serveur Xtream Codes : le protocole des panels IPTV. Entrez '
+          'adresse, identifiant et mot de passe, l application verifie la '
+          'connexion, affiche la date d expiration et le nombre de '
+          'connexions autorisees, puis construit seule la playlist et le '
+          'guide avant de les ajouter aux sources.\n\n'
+          'En-tetes HTTP : certains serveurs renvoient une erreur 403 sans '
+          'User-Agent ou Referer attendu. Vous pouvez en definir par flux, ou '
+          'par defaut pour toute l application. Les lignes #EXTVLCOPT des '
+          'playlists sont egalement lues et appliquees automatiquement.',
+        ),
+        SizedBox(height: 20),
         Text('Quelles sources choisir', style: gras),
         SizedBox(height: 8),
         Text(

@@ -1,13 +1,13 @@
-# Passer à la v5.1 depuis Termux
+# Passer à la v5.2 depuis Termux
 
 ## Les 3 commandes
 
 ```bash
-cd ~ && cp /sdcard/Download/iptv_player_v5_1.zip ~/ && unzip -o iptv_player_v5_1.zip
+cd ~ && cp /sdcard/Download/iptv_player_v5_2.zip ~/ && unzip -o iptv_player_v5_2.zip
 ```
 
 ```bash
-cd ~/iptv_player_v5 && git add -A && git commit -m "Version 5.1 : sources FAST officielles et leurs guides"
+cd ~/iptv_player_v5 && git add -A && git commit -m "Version 5.2 : flux manuels, Xtream Codes, en-tetes HTTP"
 ```
 
 ```bash
@@ -15,47 +15,79 @@ git push
 ```
 
 > Le zip contient le même dossier `iptv_player_v5`, il se décompresse
-> par-dessus l'existant sans toucher au `.git`.
+> par-dessus sans toucher au `.git`.
 
-Puis, une fois les deux jobs verts :
+Puis :
 
 ```bash
-git tag v5.1.0 && git push --tags
+git tag v5.2.0 && git push --tags
 ```
 
 ---
 
-## La combinaison à essayer en premier
+## Se connecter à votre serveur
 
-Réglages → **Sources actives** → cochez **Pluto TV France**.
-Réglages → **Guide des programmes** → cochez **Pluto TV France (recommandé)**
-→ **Télécharger le guide**.
+Menu → **Flux et serveurs** → section **Serveur Xtream Codes**.
 
-C'est le seul couple où playlist et EPG partagent les mêmes identifiants : la
-grille doit se remplir immédiatement. Si ça marche, ajoutez Samsung TV Plus
-France par-dessus, les deux fusionnent sans doublon.
+| Champ | Exemple |
+|---|---|
+| Adresse | `monserveur.tv` ou `http://192.168.1.50` |
+| Port | `8080` (laissez vide si l'adresse le contient déjà) |
+| Identifiant | votre login |
+| Mot de passe | votre mot de passe |
 
-Ensuite seulement, ajoutez les listes iptv-org si vous voulez du volume — en
-sachant qu'une bonne part de leurs liens sont morts, d'où le bouton **Tester**.
+**Se connecter** interroge `player_api.php`. En cas de succès, l'app affiche
+la date d'expiration et le nombre de connexions autorisées, puis ajoute
+automatiquement deux choses : la playlist dans les sources actives, et le
+guide XMLTV du serveur dans la section EPG.
 
-## Toutes les sources disponibles
+Ouvrez ensuite **Toutes les chaînes**.
 
-| Source | Type | Fiabilité |
-|---|---|---|
-| Pluto TV France | FAST officiel | très bonne |
-| Samsung TV Plus France | FAST officiel | très bonne |
-| Pluto TV Canada | FAST officiel | très bonne |
-| Samsung TV Plus Suisse | FAST officiel | très bonne |
-| Free-TV France | communautaire filtré | bonne |
-| iptv-org France / Belgique / Suisse / Canada | communautaire | moyenne |
-| iptv-org langue française | communautaire | moyenne |
-| Free-TV Monde | communautaire filtré | bonne |
-| iptv-org complet | communautaire | faible, ~15 000 chaînes |
+### Messages d'erreur
 
-Pour d'autres pays, ajoutez une URL personnalisée sur le motif
-`https://iptv-org.github.io/iptv/countries/XX.m3u` — par exemple `sn`, `ci`,
-`cm`, `ml`, `cd`, `bf`, `ga`, `tg`, `bj`, `mg` pour l'Afrique francophone,
-ou `subdivisions/ca-qc.m3u` pour le Québec seul.
+| Message | Cause |
+|---|---|
+| Identifiants refusés | Login ou mot de passe faux |
+| Compte expiré le ... | Abonnement terminé |
+| Réponse inattendue | Ce n'est pas un serveur Xtream Codes |
+| Serveur injoignable | Adresse ou port faux, serveur hors ligne, ou pare-feu |
+
+## Ouvrir un flux isolé
+
+Même écran, section **Ouvrir un flux**. Collez l'adresse, appuyez sur
+**Lire**. Deux boutons à ne pas confondre :
+
+- **Lire** traite l'adresse comme un flux vidéo et l'ouvre directement
+- **Ajouter comme playlist** traite l'adresse comme un fichier `.m3u` à
+  analyser, et l'ajoute aux sources
+
+Exemples qui fonctionnent :
+
+```
+http://192.168.1.20:8080/live.m3u8
+rtsp://192.168.1.30:554/stream1
+udp://@239.0.0.1:1234
+```
+
+## Erreur 403 sur un flux
+
+Certains serveurs vérifient le `User-Agent` ou le `Referer`. Dépliez
+**En-têtes HTTP** avant de lire, et renseignez la valeur attendue. Pour
+l'appliquer à tous les flux, utilisez la section **En-têtes par défaut** en
+bas de l'écran.
+
+Une valeur qui débloque beaucoup de cas :
+
+```
+Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36
+```
+
+## Note sur les mots de passe
+
+Le protocole Xtream Codes met les identifiants en clair dans l'URL de la
+playlist, c'est ainsi qu'il est conçu. Ils sont donc stockés tels quels sur
+l'appareil. N'exportez pas et ne partagez pas vos réglages si vous avez
+enregistré un serveur privé.
 
 ---
 
@@ -63,8 +95,8 @@ ou `subdivisions/ca-qc.m3u` pour le Québec seul.
 
 | Problème | Solution |
 |---|---|
-| Pluto TV ne charge pas | Le service n'est pas distribué partout, essayez Samsung TV Plus |
-| Grille toujours vide | Vérifiez que source et guide portent le même nom |
-| Coupures pendant les publicités | Normal sur les FAST, le flux se recale seul |
+| Le flux `udp://` ne marche pas sur mobile | Le multicast passe mal en Wi-Fi, testez en filaire sur la box |
+| `rtsp://` saccadé | Essayez d'ajouter `?tcp` selon la caméra |
+| Serveur local injoignable | Vérifiez que le téléphone est sur le même réseau |
+| Playlist Xtream vide | Le serveur répond mais n'expose rien : vérifiez le type de compte |
 | `Updates were rejected` | `git pull --rebase origin main` puis `git push` |
-| Build échoue | Envoyez-moi la ligne d'erreur du log Actions |

@@ -18,6 +18,9 @@ class Prefs {
   static const _kAutoZap = 'auto_zap';
   static const _kHideOffline = 'hide_offline';
   static const _kEpgUrls = 'epg_urls';
+  static const _kFluxDirects = 'flux_directs';
+  static const _kUserAgent = 'user_agent';
+  static const _kReferer = 'referer';
 
   static Future<void> init() async {
     _p = await SharedPreferences.getInstance();
@@ -110,6 +113,32 @@ class Prefs {
 
   static bool get hideOffline => _p.getBool(_kHideOffline) ?? false;
   static Future<void> setHideOffline(bool v) => _p.setBool(_kHideOffline, v);
+
+  // ---- En-tetes HTTP par defaut ----
+  /// Applique a tous les flux qui n ont pas leur propre valeur.
+  /// Certains serveurs refusent les requetes sans User-Agent connu.
+  static String get userAgent => _p.getString(_kUserAgent) ?? '';
+  static Future<void> setUserAgent(String v) => _p.setString(_kUserAgent, v);
+
+  static String get referer => _p.getString(_kReferer) ?? '';
+  static Future<void> setReferer(String v) => _p.setString(_kReferer, v);
+
+  // ---- Flux ouverts a la main ----
+  static List<Channel> get fluxDirects => _read(_kFluxDirects);
+
+  static Future<void> ajouterFluxDirect(Channel c) async {
+    final l = fluxDirects..removeWhere((f) => f.url == c.url);
+    l.insert(0, c);
+    if (l.length > 30) l.removeRange(30, l.length);
+    await _write(_kFluxDirects, l);
+  }
+
+  static Future<void> retirerFluxDirect(String url) async {
+    final l = fluxDirects..removeWhere((f) => f.url == url);
+    await _write(_kFluxDirects, l);
+  }
+
+  static Future<void> clearFluxDirects() => _p.remove(_kFluxDirects);
 
   // ---- Guide des programmes ----
   static List<String> get epgUrls {

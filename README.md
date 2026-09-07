@@ -1,7 +1,27 @@
-# Lecteur IPTV — v5.1
+# Lecteur IPTV — v5.2
 
 Lecteur de playlists M3U publiques, écrit en Flutter.
 Android, **Android TV** et Windows depuis un seul code source.
+
+## Nouveautés de la v5.2
+
+### Flux et serveurs
+Nouvelle entrée de menu, dans l'esprit du « Ouvrir un flux réseau » de VLC.
+
+- **Ouvrir un flux** : coller une adresse et la lire directement, sans
+  playlist. `http`, `https`, `rtsp`, `rtmp`, `udp` et fichiers locaux.
+  Historique des 30 derniers flux ouverts.
+- **Serveur Xtream Codes** : adresse, identifiant, mot de passe. L'app teste
+  la connexion via `player_api.php`, affiche la date d'expiration et le nombre
+  de connexions simultanées, puis construit et ajoute la playlist
+  (`get.php?type=m3u_plus`) et le guide (`xmltv.php`).
+- **En-têtes HTTP** : `User-Agent` et `Referer` réglables par flux ou par
+  défaut, pour les serveurs qui renvoient 403 sans eux.
+
+### Parseur M3U enrichi
+Les lignes `#EXTVLCOPT:http-user-agent` et `#EXTVLCOPT:http-referrer` sont
+désormais lues et appliquées automatiquement, ainsi que `#EXTGRP` en secours
+quand `group-title` est absent.
 
 ## Nouveautés de la v5.1
 

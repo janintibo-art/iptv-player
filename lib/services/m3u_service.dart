@@ -161,10 +161,33 @@ class M3uService {
           ? (attrs['tvg-name'] ?? 'Sans nom')
           : line.substring(commaIdx + 1).trim();
 
+      // Lignes intercalaires avant l URL : options VLC et groupe.
+      var groupe = attrs['group-title'] ?? '';
+      var userAgent = '';
+      var referer = '';
       String url = '';
+
       for (var j = i + 1; j < lines.length; j++) {
         final next = lines[j].trim();
-        if (next.isEmpty || next.startsWith('#')) continue;
+        if (next.isEmpty) continue;
+
+        if (next.startsWith('#EXTVLCOPT:')) {
+          final opt = next.substring(11);
+          final eq = opt.indexOf('=');
+          if (eq > 0) {
+            final cle = opt.substring(0, eq).trim().toLowerCase();
+            final val = opt.substring(eq + 1).trim();
+            if (cle == 'http-user-agent') userAgent = val;
+            if (cle == 'http-referrer' || cle == 'http-referer') referer = val;
+          }
+          continue;
+        }
+        if (next.startsWith('#EXTGRP:')) {
+          if (groupe.isEmpty) groupe = next.substring(8).trim();
+          continue;
+        }
+        if (next.startsWith('#')) continue;
+
         url = next;
         break;
       }
@@ -174,8 +197,10 @@ class M3uService {
         name: name.isEmpty ? 'Sans nom' : name,
         url: url,
         logo: attrs['tvg-logo'] ?? '',
-        group: attrs['group-title'] ?? '',
+        group: groupe,
         tvgId: attrs['tvg-id'] ?? '',
+        userAgent: userAgent,
+        referer: referer,
       ));
     }
     return out;
