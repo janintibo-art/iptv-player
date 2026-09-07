@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:xml/xml.dart';
 import 'package:xml/xml_events.dart';
 
 /// Une emission du guide des programmes.
