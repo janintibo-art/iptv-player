@@ -60,29 +60,15 @@ class Programme {
 
 /// Guides preconfigures.
 ///
-/// Les quatre premiers accompagnent les sources FAST du meme nom : leurs
-/// identifiants de chaine correspondent exactement, la grille se remplit
-/// sans reglage. Les suivants viennent d iptv-org et suivent le motif
+/// Les quatre premiers viennent d iptv-org et suivent le motif
 /// guides/<langue>/<site>.xml ; ces adresses peuvent changer, la liste a
 /// jour est sur github.com/iptv-org/epg.
+///
+/// Les deux derniers sont les guides des services FAST. Ils restent
+/// publies, mais leurs playlists ne le sont plus : ils ne servent que si
+/// vous fournissez vous-meme une playlist Pluto ou Samsung.
 class GuidesEpg {
   static const List<({String nom, String url})> presets = [
-    (
-      nom: 'Pluto TV France (recommande)',
-      url: 'https://i.mjh.nz/PlutoTV/fr.xml'
-    ),
-    (
-      nom: 'Samsung TV Plus France (recommande)',
-      url: 'https://i.mjh.nz/SamsungTVPlus/fr.xml'
-    ),
-    (
-      nom: 'Pluto TV Canada',
-      url: 'https://i.mjh.nz/PlutoTV/ca.xml'
-    ),
-    (
-      nom: 'Samsung TV Plus Suisse',
-      url: 'https://i.mjh.nz/SamsungTVPlus/ch.xml'
-    ),
     (
       nom: 'France - Orange',
       url: 'https://iptv-org.github.io/epg/guides/fr/chaines-tv.orange.fr.xml'
@@ -98,6 +84,14 @@ class GuidesEpg {
     (
       nom: 'Quebec - TV Hebdo',
       url: 'https://iptv-org.github.io/epg/guides/ca/tvhebdo.com.xml'
+    ),
+    (
+      nom: 'Pluto TV France (playlist Pluto requise)',
+      url: 'https://i.mjh.nz/PlutoTV/fr.xml'
+    ),
+    (
+      nom: 'Samsung TV Plus France (playlist Samsung requise)',
+      url: 'https://i.mjh.nz/SamsungTVPlus/fr.xml'
     ),
   ];
 }

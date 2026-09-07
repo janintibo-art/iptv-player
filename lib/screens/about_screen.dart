@@ -37,14 +37,12 @@ class AboutScreen extends StatelessWidget {
         Text('Quelles sources choisir', style: gras),
         SizedBox(height: 8),
         Text(
-          'Les quatre premieres sources des Reglages sont des services FAST '
-          'officiels et gratuits, finances par la publicite : Pluto TV et '
-          'Samsung TV Plus. Leurs flux sont maintenus par les diffuseurs '
-          'eux-memes, donc ils ne tombent quasiment jamais, contrairement aux '
-          'listes communautaires ou une bonne part des liens est morte.\n\n'
-          'Elles ont un second avantage : leur guide des programmes emploie '
-          'exactement les memes identifiants de chaine, donc la grille se '
-          'remplit du premier coup. Cochez la source et le guide du meme nom.',
+          'Free-TV France est la source par defaut : liste courte, mais bien '
+          'entretenue. Les listes iptv-org offrent beaucoup plus de volume au '
+          'prix de nombreux liens morts, d ou le bouton "Tester".\n\n'
+          'Vous pouvez aussi fournir votre propre playlist, un fichier .m3u '
+          'de l appareil, ou un serveur Xtream Codes, depuis l ecran '
+          '"Flux et serveurs".',
         ),
         SizedBox(height: 20),
         Text('Guide des programmes', style: gras),
